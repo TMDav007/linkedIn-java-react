@@ -7,6 +7,9 @@ import com.linkedIn.backend.features.authentication.repository.AuthenticaltionUs
 import com.linkedIn.backend.features.authentication.utils.EmailService;
 import com.linkedIn.backend.features.authentication.utils.Encoder;
 import com.linkedIn.backend.features.authentication.utils.JsonWebToken;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.PersistenceContext;
+import jakarta.transaction.Transactional;
 import jakarta.validation.Valid;
 import org.slf4j.ILoggerFactory;
 import org.slf4j.Logger;
@@ -16,6 +19,7 @@ import org.springframework.stereotype.Service;
 import java.security.SecureRandom;
 import java.time.LocalDateTime;
 import java.util.Optional;
+import java.util.UUID;
 
 @Service
 public class AuthenticationService {
@@ -27,6 +31,8 @@ public class AuthenticationService {
     private final JsonWebToken jsonWebToken;
     private final EmailService emailService;
 
+    @PersistenceContext
+    private EntityManager entityManager;
 
     public AuthenticationService(AuthenticaltionUserRepository authenticatedUserRepository, Encoder encoder, JsonWebToken jsonWebToken, EmailService emailService) {
         this.authenticatedUserRepository = authenticatedUserRepository;
@@ -171,4 +177,26 @@ public class AuthenticationService {
         }
     }
 
+    public AuthenticationUser updateUserProfile(UUID userId, String firstName, String lastName, String company, String position, String location) {
+        AuthenticationUser user = authenticatedUserRepository.findById(userId).orElseThrow(() -> new IllegalArgumentException("User not found"));
+
+        if(firstName != null) user.setFirstName(firstName);
+        if(lastName != null) user.setLastName(lastName);
+        if (company != null) user.setCompany(company);
+        if (position != null) user.setPosition(position);
+        if (location != null) user.setLocation(location);
+
+        return authenticatedUserRepository.save(user);
+    }
+
+    @Transactional // rollback if could not delete all i.e it is all or nothing
+    public void deleteUser(UUID userId) {
+        AuthenticationUser user = entityManager.find(AuthenticationUser.class, userId);
+        if (user != null) {
+            entityManager.createNativeQuery("DELETE FROM posts_likes WHERE user_id = :userId" )
+                    .setParameter("userId", userId)
+                    .executeUpdate();
+        }
+        authenticatedUserRepository.deleteById(userId);
+    }
 }

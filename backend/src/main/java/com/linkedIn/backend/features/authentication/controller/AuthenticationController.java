@@ -6,7 +6,11 @@ import com.linkedIn.backend.features.authentication.dto.AuthenticationResponseBo
 import com.linkedIn.backend.features.authentication.model.AuthenticationUser;
 import com.linkedIn.backend.features.authentication.service.AuthenticationService;
 import jakarta.validation.Valid;
+import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.server.ResponseStatusException;
+
+import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/v1/authentication")
@@ -56,6 +60,29 @@ public class AuthenticationController {
     public Response resetPassword(@RequestParam String newPassword, @RequestParam String token, @RequestParam String email) {
         authenticationService.resetPassword(email, newPassword, token);
         return new Response("Password reset successfully.");
+    }
+
+    @DeleteMapping("/delete")
+    public Response deleteUser(@RequestAttribute("authenticatedUser") AuthenticationUser user) {
+        authenticationService.deleteUser(user.getId());
+        return new Response("User deleted successfully.");
+    }
+
+    @PutMapping("/profile/{id}")
+    public AuthenticationUser updateUserProfile(
+            @RequestAttribute("authenticatedUser") AuthenticationUser user,
+            @PathVariable UUID id,
+            @RequestParam(required = false) String firstName,
+            @RequestParam(required = false) String lastName,
+            @RequestParam(required = false) String company,
+            @RequestParam(required = false) String position,
+            @RequestParam(required = false) String location
+    ) {
+        if (!user.getId().equals(id)) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "User does not have permission to update this profile.");
+        }
+
+        return authenticationService.updateUserProfile(id, firstName, lastName, company, position, location);
     }
 
 }
