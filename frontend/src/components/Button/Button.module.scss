@@ -4,13 +4,27 @@
     align-items: center;
    // gap: 0.5rem;
     width: 100%;
-    padding:1rem;
+
     background-color: var(--primary-color);
     color: white;
     border-radius: 9999px;
     margin-block: 1rem;
     font-weight: bold;
     transition: 0.3s;
+
+    &.large{
+      padding:1rem;
+    }
+
+    &.medium{
+      padding: 0.5rem;
+      font-size: 0.9rem;
+    }
+
+    &.small{
+      padding: 0.2rem;
+      font-size: 0.8rem
+    }
 
     &:disabled {
         color: black;

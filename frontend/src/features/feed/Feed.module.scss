@@ -1,57 +1,61 @@
 .root{
-    min-width: 100vh;
     display: grid;
-    grid-template-rows: auto 1fr;
+    max-width: 74rem;
+    width: 100%;
+    // grid-template-rows: auto 1fr;
     gap: 2rem;
+    margin: 0 auto;
 
-    .content{
-        display: grid;
-        grid-template-rows: 10rem 1fr 10rem;
-        gap: 2rem;
-        padding-inline: 2rem;
-        max-width: 74rem;
-        margin: 0 auto;
-        width: 100%;
+    .left,
+    .right {
+      display: none;
     }
 
-    .header,
-    .left,
-    .right,
-    .posting,
-    .feed{
-        background-color: #eaeaea;
-        border-radius: 1rem;
+    .posting{
+        background-color: white;
+        border-radius: 0.3rem;
+        border: 1px solid #e0e0e0;
+        padding: 1rem;
+        display: grid;
+        grid-template-columns: 5rem 1fr;
+        gap: 1rem;
+    
+        .avatar {
+          width: 5rem;
+          height: 5rem;
+          border-radius: 50%;
+        }
     }
 
     .header {
-        height: 4rem;
-        border-radius: 0;
         display: flex;
         justify-content: flex-end;
-        align-items: center;
         gap: 1rem;
-        padding: 1rem;
-    }
+        font-size: 0.9rem;
+        padding: 1rem 0;
 
-    .center{
-        display: grid;
-        height: 100%;
-        grid-template-rows: 7rem 1fr;
-        gap: 1rem
-    }
-
-    @media screen and (min-width: 768px) {
-        .content{
-            grid-template-columns:15rem 1fr 18rem;
-            grid-template-rows: auto;
+        button {
+            background-color: #e0e0e0;
+            border-radius:999px;
+            padding: 0.5rem 1rem;
         }
 
-        .left{
-            height: 30rem;
-        }
-
-        .right{
-            height: 20rem;
+        button.active{
+            background-color: var(--primary-color-dark);
+            color: white
         }
     }
+
+    .error {
+        color: red;
+    }
+ 
+
+    @media screen and (width >= 1135px) {
+        grid-template-columns: 14rem 1fr 20rem;
+        .left,
+        .right {
+          display: block;
+        }
+      } 
 }

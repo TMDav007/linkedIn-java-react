@@ -12,7 +12,7 @@
   }
 
   html {
-    font-family: Poppins, sans-serif;
+    font-family: "Poppins", sans-serif;
     background-color: #f4f2ee;
     overflow-x: hidden;
   }
@@ -32,4 +32,8 @@
   
   a {
     text-decoration: none;
+  }
+
+  ul {
+    list-style: none;
   }

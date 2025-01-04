@@ -1,13 +1,14 @@
-import {ReactNode} from 'react'
-import classes from "./Layout.module.scss"
 
-function Layout({children, className}: {children: ReactNode, className?: string}) {
+import classes from "./AuthenticationLayout.module.scss"
+import { Outlet } from 'react-router-dom'
+
+function AuthenticationLayout() {
   return (
     <div className={classes.root}>
-        <header className={`${classes.container} ${className}`}>
+        <header className={classes.container}>
             <a href="/"><img src="/logo.svg"  className={classes.logo} alt=""/></a>
         </header>
-        <main className={classes.container}>{children}</main>
+        <main className={classes.container}>{<Outlet />}</main>
         <footer>
             <ul className={classes.container}>
                 <li>
@@ -48,4 +49,4 @@ function Layout({children, className}: {children: ReactNode, className?: string}
   )
 }
 
-export default Layout
+export default AuthenticationLayout
