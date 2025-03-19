@@ -1,4 +1,4 @@
-package com.linkedIn.backend.features.notifications.model;
+package com.linkedIn.backend.features.notifications;
 
 public enum NotificationType {
     LIKE,

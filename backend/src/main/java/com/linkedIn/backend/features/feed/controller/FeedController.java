@@ -11,6 +11,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 
 @RestController
@@ -77,6 +78,13 @@ public class FeedController {
     public ResponseEntity<Post> likePost(@PathVariable UUID postId, @RequestAttribute("authenticatedUser") AuthenticationUser user) {
         Post post = feedService.likePost(postId, user.getId());
         return ResponseEntity.ok(post);
+    }
+
+    @GetMapping("/posts/{postId}/likes")
+    public ResponseEntity<Set<AuthenticationUser>> getPostLikes(@PathVariable UUID postId) {
+        Set<AuthenticationUser> likes = feedService.getPostLikes(postId);
+
+        return ResponseEntity.ok(likes);
     }
 
     @PostMapping("/posts/{postId}/comments")

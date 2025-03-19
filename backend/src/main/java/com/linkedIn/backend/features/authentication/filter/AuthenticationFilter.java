@@ -19,7 +19,7 @@ import java.util.List;
 public class AuthenticationFilter extends HttpFilter {
 
     // more like middleware in nodejs
-    private  final List<String>  unsecuredEndpoints = Arrays.asList(
+    private final List<String>  unsecuredEndpoints = Arrays.asList(
             "/api/v1/authentication/login",
             "/api/v1/authentication/register",
             "/api/v1/authentication/send-password-reset-token",
@@ -58,7 +58,7 @@ public class AuthenticationFilter extends HttpFilter {
         try{
             String authorization = request.getHeader("Authorization");
 
-            if (authorization != null && !authorization.startsWith("Bearer ")) {
+            if (authorization == null || !authorization.startsWith("Bearer ")) {
                 throw new ServletException("Token Missing");
             }
             String token = authorization.substring("Bearer ".length());

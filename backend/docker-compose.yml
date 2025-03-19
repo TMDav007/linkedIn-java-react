@@ -1,8 +1,8 @@
 version: '3.8'
 
 services:
-  mysql:
-    image: postgres:latest
+  postgres:
+    image: postgres:12.22-bookworm
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: root
