@@ -1,16 +1,19 @@
-import { Outlet } from "react-router-dom"
-import classes from "./ApplicationLayout.module.scss"
-import Header from "../Header/Header"
+import { Outlet } from "react-router-dom";
+import classes from "./ApplicationLayout.module.scss";
+import Header from "../Header/Header";
+import { WebSocketContextProvider } from "../../features/websocket/Ws";
 
 function ApplicationLayout() {
   return (
-    <div className={classes.root}>
+    <WebSocketContextProvider>
+      <div className={classes.root}>
         <Header />
         <main className={classes.container}>
-            <Outlet />
+          <Outlet />
         </main>
-    </div>
-  )
+      </div>
+    </WebSocketContextProvider>
+  );
 }
 
-export default ApplicationLayout 
+export default ApplicationLayout;

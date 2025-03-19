@@ -48,6 +48,24 @@
         align-items: center;
       }
 
+      .notifications {
+        position: relative;
+
+        .badge {
+          position: absolute;
+          top: -0.5rem;
+          left: 0.5rem;
+          background-color: crimson;
+          color: white;
+          border-radius: 50%;
+          font-size: 0.6rem;
+          width: 1rem;
+          height: 1rem;
+          display: grid;
+          place-items: center;
+        }
+      }
+
       ul {
         position: absolute;
         top: 5rem;

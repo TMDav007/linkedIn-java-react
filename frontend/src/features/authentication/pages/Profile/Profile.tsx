@@ -3,8 +3,9 @@ import classes from "./Profile.module.scss";
 import Box from "../../components/Box/Box";
 import Input from "../../../../components/Input/Input";
 import Button from "../../../../components/Button/Button";
-import { useAuthentication } from "../../contexts/AuthenticationContextProvider";
+import { useAuthentication, User } from "../../contexts/AuthenticationContextProvider";
 import { useNavigate } from "react-router-dom";
+import { request } from "../../../../utils/api";
 
 export default function Profile() {
   const [step, setStep] = useState(0);
@@ -33,33 +34,16 @@ export default function Profile() {
       return;
     }
 
-    try {
-      const response = await fetch(
-        `${import.meta.env.VITE_API_URL}/api/v1/authentication/profile/${user?.id}?firstName=${data.firstName}&lastName=${data.lastName}&company=${data.company}&position=${data.position}&location=${data.location}`,
-        {
-          method: "PUT",
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem("token")}`,
-          },
-        }
-      );
-
-      if (response.ok) {
-        const updatedUser = await response.json();
-        setUser(updatedUser);
-      } else {
-        const { message } = await response.json();
-        throw new Error(message);
-      }
-    } catch (e) {
-      if (e instanceof Error) {
-        setError(error.message);
-      } else {
-        setError("An unknown error occurred");
-      }
-    } finally {
-      navigate("/");
-    }
+    await request<User>({
+      endpoint: `/api/v1/authentication/profile/${user?.id}?firstName=${data.firstName}&lastName=${data.lastName}&company=${data.company}&position=${data.position}&location=${data.location}`,
+      method: "PUT",
+      body: JSON.stringify(data),
+      onSuccess: (data) => {
+        setUser(data);
+        navigate("/");
+      },
+      onFailure: (error) => setError(error),
+    });
   };
 
   return (

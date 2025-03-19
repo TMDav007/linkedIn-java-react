@@ -1,12 +1,14 @@
 import { useNavigate } from "react-router-dom";
-import Button from "../../components/Button/Button";
-import { useAuthentication } from "../authentication/contexts/AuthenticationContextProvider";
-import LeftSideBar from "./components/LeftSidebar/LeftSideBar";
-import RightSidebar from "./components/RightSidebar/RightSidebar";
+import LeftSideBar from "./../../components/LeftSidebar/LeftSideBar";
+import RightSidebar from "./../../components/RightSidebar/RightSidebar";
 import classes from "./Feed.module.scss";
 import { useEffect, useState } from "react";
-import { Post, Posts } from "./components/Post/Post";
-import Modal from "./components/Modal/Modal";
+
+import Modal from "./../../components/Modal/Modal";
+import { Post, Posts } from "../../components/Post/Post";
+import { useAuthentication } from "../../../authentication/contexts/AuthenticationContextProvider";
+import { request } from "../../../../utils/api";
+import Button from "../../../../components/Button/Button";
 
 export default function Feed() {
   const { user, logout } = useAuthentication();
@@ -18,33 +20,15 @@ export default function Feed() {
   const [posts, setPosts] = useState<Post[]>([]);
   const [error, setError] = useState("");
 
-  useEffect(() => {
-    const fetchPosts = async () => {
-      try {
-        const response = await fetch(
-          import.meta.env.VITE_API_URL +
-            "/api/v1/feed" +
-            (feedContent === "connections" ? "" : "/posts"),
-          {
-            headers: {
-              Authorization: `Bearer ${localStorage.getItem("token")}`,
-            },
-          }
-        );
 
-        if (!response.ok) {
-          const { message } = await response.json();
-          throw new Error(message);
-        }
-        const data = await response.json();
-        setPosts(data);
-      } catch (e) {
-        if (e instanceof Error) {
-          setError(e.message);
-        } else {
-          setError("An error occurred, Please try again later");
-        }
-      }
+  useEffect(() => {
+    const endpoint = `/api/v1/feed${feedContent === "connections" ? "" :'/posts'}`;
+    const fetchPosts = async () => {
+      await request<Post[]>({
+        endpoint,
+        onSuccess: (data) => setPosts(data),
+        onFailure: (error) => setError(error),
+      });
     };
 
     fetchPosts();

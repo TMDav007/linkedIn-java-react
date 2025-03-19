@@ -6,7 +6,7 @@ import {
   Navigate,
   RouterProvider,
 } from "react-router-dom";
-import Feed from "./features/feed/Feed";
+
 import Login from "./features/authentication/pages/Login/Login";
 import Signup from "./features/authentication/pages/Signup/Signup";
 import ResetPassword from "./features/authentication/pages/ResetPassword/ResetPassword";
@@ -15,6 +15,9 @@ import { AuthenticationContextProvider } from "./features/authentication/context
 import AuthenticationLayout from "./features/authentication/components/AuthenticationLayout/AuthenticationLayout";
 import ApplicationLayout from "./components/ApplicationLayout/ApplicationLayout";
 import Profile from "./features/authentication/pages/Profile/Profile";
+import Feed from "./features/feed/pages/Feed/Feed";
+import Notifications from "./features/feed/pages/Notifications/Notifications";
+import PostPage from "./features/feed/pages/Post/Post";
 
 const router = createBrowserRouter([
   {
@@ -30,7 +33,7 @@ const router = createBrowserRouter([
           },
           {
             path: "posts/:id",
-            element: <div>psts</div>,
+            element: <PostPage />,
           },
           {
             path: "network",
@@ -62,7 +65,7 @@ const router = createBrowserRouter([
           },
           {
             path: "notifications",
-            element: <div>psts</div>,
+            element: <Notifications />,
           },
           // {
           //   path: "profile/:id",
@@ -109,7 +112,7 @@ const router = createBrowserRouter([
 ]);
 
 createRoot(document.getElementById("root")!).render(
-  <StrictMode>
+  <StrictMode >
     <RouterProvider router={router} />
   </StrictMode>
 );

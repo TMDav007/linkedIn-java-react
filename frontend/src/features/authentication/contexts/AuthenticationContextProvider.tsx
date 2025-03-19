@@ -8,6 +8,12 @@ import {
 } from "react";
 import { Navigate, Outlet, useLocation } from "react-router-dom";
 import Loader from "../../../components/Loader/Loader";
+import { request } from "../../../utils/api";
+
+interface IAuthenticationResponse {
+  token: string;
+  messgage: string;
+}
 
 export interface User {
   id: string;
@@ -48,45 +54,31 @@ export function AuthenticationContextProvider() {
     location.pathname === "/authentication/request-password-reset";
 
   const login = async (email: string, password: string) => {
-    const response = await fetch(
-      import.meta.env.VITE_API_URL + "/api/v1/authentication/login",
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ email, password }),
-      }
-    );
-
-    if (response.ok) {
-      const { token } = await response.json();
-      localStorage.setItem("token", token);
-    } else {
-      const { message } = await response.json();
-      throw new Error(message);
-    }
+    await request<IAuthenticationResponse>({
+      endpoint: "/api/v1/authentication/login",
+      method: "POST",
+      body: JSON.stringify({ email, password }),
+      onSuccess: ({ token }) => {
+        localStorage.setItem("token", token);
+      },
+      onFailure: (error) => {
+        throw new Error(error);
+      },
+    });
   };
 
   const signup = async (email: string, password: string) => {
-    const response = await fetch(
-      import.meta.env.VITE_API_URL + "/api/v1/authentication/register",
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ email, password }),
-      }
-    );
-
-    if (response.ok) {
-      const { token } = await response.json();
-      localStorage.setItem("token", token);
-    } else {
-      const { message } = await response.json();
-      throw new Error(message);
-    }
+    await request<IAuthenticationResponse>({
+      endpoint: "/api/v1/authentication/register",
+      method: "POST",
+      body: JSON.stringify({ email, password }),
+      onSuccess: ({ token }) => {
+        localStorage.setItem("token", token);
+      },
+      onFailure: (error) => {
+        throw new Error(error);
+      },
+    });
   };
 
   const logout = () => {
@@ -94,31 +86,19 @@ export function AuthenticationContextProvider() {
     setUser(null);
   };
 
-  const fetchUser = async () => {
-    try {
-      const response = await fetch(
-        import.meta.env.VITE_API_URL + "/api/v1/authentication/user",
-        {
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem("token")}`,
-          },
-        }
-      );
-
-      if (!response.ok) {
-        throw new Error("Authentication failed");
-      }
-      const user = await response.json();
-      setUser(user);
-    } catch (e) {
-      console.log(e);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
   useEffect(() => {
     if (user) return;
+    setIsLoading(true);
+    const fetchUser = async () => {
+      await request<User>({
+        endpoint: "/api/v1/authentication/user",
+        onSuccess: (data) => setUser(data),
+        onFailure: (error) => {
+          console.log(error);
+        },
+      });
+      setIsLoading(false);
+    };
     fetchUser();
   }, [user, location.pathname]);
 
@@ -150,7 +130,7 @@ export function AuthenticationContextProvider() {
     user &&
     user.emailVerified &&
     !user.profileComplete &&
-    !location.pathname.includes("profile")
+    !location.pathname.includes("/authentication/profile")
   ) {
     return <Navigate to={`/authentication/profile/${user.id}`} />;
   }
@@ -169,7 +149,9 @@ export function AuthenticationContextProvider() {
   }
 
   return (
-    <AuthenticationContext.Provider value={{ user, setUser, login, signup, logout }}>
+    <AuthenticationContext.Provider
+      value={{ user, setUser, login, signup, logout }}
+    >
       {user && !user.emailVerified ? (
         <Navigate to="/authentication/verify-email" />
       ) : null}

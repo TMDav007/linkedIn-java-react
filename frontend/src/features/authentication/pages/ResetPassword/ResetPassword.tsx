@@ -4,6 +4,7 @@ import Box from "../../components/Box/Box";
 import Input from "../../../../components/Input/Input";
 import Button from "../../../../components/Button/Button";
 import { useNavigate } from "react-router-dom";
+import { request } from "../../../../utils/api";
 
 function ResetPassword() {
   const navigate = useNavigate();
@@ -13,56 +14,33 @@ function ResetPassword() {
   const [isLoading, setIsLoading] = useState(false);
 
   const sendPasswordResetToken = async (email: string) => {
-    try {
-      const response = await fetch(
-        `${
-          import.meta.env.VITE_API_URL
-        }/api/v1/authentication/send-password-reset-token?email=${email}`,
-        {
-          method: "PUT",
-        }
-      );
-      if (response.ok) {
+    await request<void>({
+      endpoint: `/api/v1/authentication/send-password-reset-token?email=${email}`,
+      method: "PUT",
+      onSuccess: () => {
         setErrorMessage("");
         setEmailSent(true);
-        return;
-      }
-      const { message } = await response.json();
-      setErrorMessage(message);
-    } catch (e) {
-      console.log(e);
-      setErrorMessage("Something went wrong. Please try again");
-    } finally {
-      setIsLoading(false);
-    }
+      },
+      onFailure: (error) => {
+        setErrorMessage(error);
+      },
+    });
+    setIsLoading(false);
   };
 
-  const resetPassword = async (
-    email: string,
-    code: string,
-    password: string
-  ) => {
-    try {
-      const response = await fetch(
-        `${
-          import.meta.env.VITE_API_URL
-        }/api/v1/reset-password?email=${email}&token=${code}&newPassword=${password}`,
-        {
-          method: "PUT",
-        }
-      );
-      if (response.ok) {
+  const resetPassword = async (email: string, code: string, password: string) => {
+    await request<void>({
+      endpoint: `/api/v1/authentication/reset-password?email=${email}&token=${code}&newPassword=${password}`,
+      method: "PUT",
+      onSuccess: () => {
         setErrorMessage("");
         navigate("/login");
-      }
-      const { message } = await response.json();
-      setErrorMessage(message);
-    } catch (e) {
-      console.log(e);
-      setErrorMessage("Something went wrong. Please try again");
-    } finally {
-      setIsLoading(false);
-    }
+      },
+      onFailure: (error) => {
+        setErrorMessage(error);
+      },
+    });
+    setIsLoading(false);
   };
 
   return (

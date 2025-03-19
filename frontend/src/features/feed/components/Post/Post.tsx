@@ -15,6 +15,9 @@ import Input from "../../../../components/Input/Input";
 import { timeAgo } from "../../../utils/date";
 import Comments, { Comment } from "../Comments/Comments";
 import Modal from "../Modal/Modal";
+import TimeAgo from "../TimeAgo/TimeAgo";
+import { request } from "../../../../utils/api";
+import { useWebSocket } from "../../../websocket/Ws";
 
 export interface Post {
   id: number;
@@ -29,7 +32,7 @@ export interface Post {
 
 interface PostProps {
   post: Post;
-  setPosts: Dispatch<SetStateAction<Post[]>>;
+  setPosts?: Dispatch<SetStateAction<Post[]>>;
 }
 
 export function Posts({ post, setPosts }: PostProps) {
@@ -39,235 +42,165 @@ export function Posts({ post, setPosts }: PostProps) {
   const [editing, setEditing] = useState(false);
   const [showComments, setShowComments] = useState(false);
   const [content, setContent] = useState("");
-  const [postLiked, setPostLiked] = useState<boolean>(
-    !!post.likes?.some((like) => like.id === user?.id)
-  );
+  const [comments, setComments] = useState<Comment[]>([]);
+  const [likes, setLikes] = useState<User[]>([]);
+  const [postLiked, setPostLiked] = useState<boolean | undefined>(undefined);
+  const webSocketClient = useWebSocket();
 
   useEffect(() => {
-    setPostLiked(!!post.likes?.some((like) => like.id === user?.id));
-  }, [post.likes, user?.id]);
+    const fetchComments = async () => {
+      await request<Comment[]>({
+        endpoint: `/api/v1/feed/posts/${post.id}/comments`,
+        onSuccess: (data) => setComments(data),
+        onFailure: (error) => {
+          console.error(error);
+        },
+      });
+    };
+
+    fetchComments();
+  }, [post.id, user?.id]);
+
+  useEffect(() => {
+    const subscription = webSocketClient?.subscribe(
+      `/topic/likes/${post.id}`,
+      (message) => {
+        const likes = JSON.parse(message.body);
+        setLikes(likes);
+        setPostLiked(likes.some((like: User) => like.id === user?.id));
+      }
+    );
+    return () => subscription?.unsubscribe();
+  }, [post.id, user?.id, webSocketClient]);
+
+  useEffect(() => {
+    const subscription = webSocketClient?.subscribe(
+      `/topic/comments/${post.id}`,
+      (message) => {
+        const comment = JSON.parse(message.body);
+        setComments((prev) => [comment, ...prev]);
+      }
+    );
+    return () => subscription?.unsubscribe();
+  }, [post.id, webSocketClient]);
+
+  useEffect(() => {
+    const fetchLikes = async () => {
+      await request<User[]>({
+        endpoint: `/api/v1/feed/posts/${post.id}/likes`,
+        onSuccess: (data) => {
+          // console.log(data, "data")
+          setLikes(data);
+          setPostLiked(data.some((like) => like.id === user?.id));
+        },
+        onFailure: (error) => {
+          console.error(error);
+        },
+      });
+    };
+
+    fetchLikes();
+  }, [post.id, user?.id]);
 
   const deletePost = async (id: number) => {
-    try {
-      const response = await fetch(
-        import.meta.env.VITE_API_URL + "/api/v1/feed/posts/" + id,
-        {
-          method: "DELETE",
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem("token")}`,
-          },
-        }
-      );
-
-      if (!response.ok) {
-        const { message } = await response.json();
-        throw new Error(message);
-      }
-      setPosts((prev) => prev.filter((p) => p.id != id));
-    } catch (e) {
-      if (e instanceof Error) {
-        console.log(e);
-      }
-    }
+    await request<void>({
+      endpoint: `/api/v1/feed/posts/${id}`,
+      method: "DELETE",
+      onSuccess: () => {
+        setPosts((prev) => prev.filter((p) => p.id !== id));
+      },
+      onFailure: (error) => {
+        console.error(error);
+      },
+    });
   };
 
   const like = async () => {
-    setPostLiked((prev) => !prev);
-    try {
-      const response = await fetch(
-        import.meta.env.VITE_API_URL +
-          "/api/v1/feed/posts/" +
-          post.id +
-          "/like",
-        {
-          method: "PUT",
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem("token")}`,
-          },
-        }
-      );
-
-      if (!response.ok) {
-        const { message } = await response.json();
-        throw new Error(message);
-      }
-    } catch (e) {
-      if (e instanceof Error) {
-        console.error(e.message);
-      } else {
-        console.error("An error occurred. Please try again later.");
-      }
-      setPostLiked((prev) => !prev);
-    }
+    await request<Post>({
+      endpoint: `/api/v1/feed/posts/${post.id}/like`,
+      method: "PUT",
+      onSuccess: () => {},
+      onFailure: (error) => {
+        console.error(error);
+      },
+    });
   };
 
   const editComment = async (id: string, content: string) => {
-    try {
-      const response = await fetch(
-        import.meta.env.VITE_API_URL + "/api/v1/feed/comments/" + id,
-        {
-          method: "PUT",
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem("token")}`,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({ content }),
-        }
-      );
-
-      if (!response.ok) {
-        const { message } = await response.json();
-        throw new Error(message);
-      }
-
-      setPosts((prev) =>
-        prev.map((p) => {
-          if (p.id === post.id) {
-            return {
-              ...p,
-              comments: p.comments?.map((comment) => {
-                if (comment?.id === id) {
-                  return {
-                    ...comment,
-                    content,
-                    updatedDate: new Date().toISOString(),
-                  };
-                }
-                return comment;
-              }),
-            };
-          }
-          return p;
-        })
-      );
-    } catch (e) {
-      if (e instanceof Error) {
-        console.error(e.message);
-      }
-    }
+    await request<Comment>({
+      endpoint: `/api/v1/feed/comments/${id}`,
+      method: "PUT",
+      body: JSON.stringify({ content }),
+      onSuccess: (data) => {
+        setComments((prev) =>
+          prev.map((comment) => {
+            if (comment.id === id) {
+              return data;
+            }
+            return comment;
+          })
+        );
+      },
+      onFailure: (error) => {
+        console.error(error);
+      },
+    });
   };
 
   const deleteComment = async (id: string) => {
-    try {
-      const response = await fetch(
-        import.meta.env.VITE_API_URL + "/api/v1/feed/comments/" + id,
-        {
-          method: "DELETE",
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem("token")}`,
-          },
-        }
-      );
-
-      if (!response.ok) {
-        const { message } = await response.json();
-        throw new Error(message);
-      }
-
-      setPosts((prev) =>
-        prev.map((p) => {
-          if (p.id === post.id) {
-            return {
-              ...p,
-              comments: p.comments?.filter((comment) => comment.id !== id),
-            };
-          }
-          return p;
-        })
-      );
-    } catch (e) {
-      if (e instanceof Error) {
-        console.error(e.message);
-      }
-    }
+    await request<void>({
+      endpoint: `/api/v1/feed/comments/${id}`,
+      method: "DELETE",
+      onSuccess: () => {
+        setComments((prev) => prev.filter((comment) => comment.id !== id));
+      },
+      onFailure: (error) => {
+        console.error(error);
+      },
+    });
   };
 
   const postComment = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    if (!content) return;
-
-    try {
-      const response = await fetch(
-        import.meta.env.VITE_API_URL +
-          "/api/v1/feed/posts/" +
-          post.id +
-          "/comments",
-        {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem("token")}`,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({ content }),
-        }
-      );
-
-      if (!response.ok) {
-        const { message } = await response.json();
-        throw new Error(message);
-      }
-
-      const data = await response.json();
-      setPosts((prev) =>
-        prev.map((p) => {
-          if (p.id === post.id) {
-            return {
-              ...p,
-              comments: p.comments ? [data, ...p.comments] : [data],
-            };
-          }
-          return p;
-        })
-      );
-      setContent("");
-    } catch (e) {
-      if (e instanceof Error) {
-        console.error(e.message);
-      } else {
-        console.error("An error occurred. Please try again later. ");
-      }
+    if (!content) {
+      return;
     }
+    await request<Post>({
+      endpoint: `/api/v1/feed/posts/${post.id}/comments`,
+      method: "POST",
+      body: JSON.stringify({ content }),
+      onSuccess: () => setContent(""),
+      onFailure: (error) => {
+        console.error(error);
+      },
+    });
   };
 
   const editPost = async (content: string, picture: string) => {
-    try {
-      const response = await fetch(
-        import.meta.env.VITE_API_URL + "/api/v1/feed/posts/" + post.id,
-        {
-          method: "PUT",
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem("token")}`,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({ content, picture }),
-        }
-      );
-
-      if (!response.ok) {
-        const { message } = await response.json();
-        throw new Error(message);
-      }
-
-      const data = await response.json();
-      setPosts((prev) =>
-        prev.map((p) => {
-          if (p.id === post.id) {
-            return data;
-          }
-          return p;
-        })
-      );
-      setShowMenu(false);
-    } catch (e) {
-      if (e instanceof Error) {
-        console.error(e.message);
-      }
-    }
+    await request<Post>({
+      endpoint: `/api/v1/feed/posts/${post.id}`,
+      method: "PUT",
+      body: JSON.stringify({ content, picture }),
+      onSuccess: (data) => {
+        setPosts((prev) =>
+          prev.map((p) => {
+            if (p.id === post.id) {
+              return data;
+            }
+            return p;
+          })
+        );
+        setShowMenu(false);
+      },
+      onFailure: (error) => {
+        throw new Error(error);
+      },
+    });
   };
 
   return (
     <>
-      {
+      {editing ? (
         <Modal
           setShowModal={setEditing}
           onSubmit={editPost}
@@ -276,7 +209,7 @@ export function Posts({ post, setPosts }: PostProps) {
           content={post.content}
           picture={post.picture}
         />
-      }
+      ) : null}
       <div className={classes.root}>
         <div className={classes.top}>
           <div className={classes.author}>
@@ -299,11 +232,7 @@ export function Posts({ post, setPosts }: PostProps) {
               <div className={classes.title}>
                 {post.author.position + " at " + post.author.company}
               </div>
-              <div className={classes.date}>
-                {timeAgo(new Date(post.updatedDate || post.creationDate))}
-                {post.updatedDate ? " . Edited " : ""}
-              </div>
-              {/* <TimeAgo date={post.creationDate} edited={!!post.updatedDate} /> */}
+              <TimeAgo date={post.creationDate} edited={!!post.updatedDate} />
             </div>
           </div>
           <div>
@@ -332,20 +261,17 @@ export function Posts({ post, setPosts }: PostProps) {
           <img src={post.picture} alt="" className={classes.picture} />
         )}
         <div className={classes.stats}>
-          {post.likes && post.likes?.length > 0 ? (
+          {likes?.length > 0 ? (
             <div className={classes.stat}>
               <span>
                 {postLiked
                   ? "You "
-                  : post.likes[0].firstName +
-                    " " +
-                    post.likes[0].lastName +
-                    " "}
+                  : likes[0].firstName + " " + likes[0].lastName + " "}
               </span>
-              {post.likes.length - 1 > 0 ? (
+              {likes.length - 1 > 0 ? (
                 <span>
-                  and {post.likes.length - 1}{" "}
-                  {post.likes.length - 1 === 1 ? "other" : "others"}
+                  and {likes.length - 1}{" "}
+                  {likes.length - 1 === 1 ? "other" : "others"}
                 </span>
               ) : null}{" "}
               liked this
@@ -354,12 +280,12 @@ export function Posts({ post, setPosts }: PostProps) {
             <div></div>
           )}
 
-          {post.comments && post.comments.length > 0 ? (
+          {comments.length > 0 ? (
             <button
               className={classes.stat}
               onClick={() => setShowComments((prev) => !prev)}
             >
-              <span>{post.comments.length} comments</span>
+              <span>{comments.length} comments</span>
             </button>
           ) : (
             <div></div>
@@ -415,8 +341,8 @@ export function Posts({ post, setPosts }: PostProps) {
               />
             </form>
 
-            {post.comments &&
-              post.comments.map((comment) => (
+            {comments &&
+              comments.map((comment) => (
                 <Comments
                   editComment={editComment}
                   deleteComment={deleteComment}
