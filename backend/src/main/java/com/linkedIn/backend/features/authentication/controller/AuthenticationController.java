@@ -10,6 +10,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.util.List;
 import java.util.UUID;
 
 @RestController
@@ -83,6 +84,11 @@ public class AuthenticationController {
         }
 
         return authenticationService.updateUserProfile(id, firstName, lastName, company, position, location);
+    }
+
+    @GetMapping("/users")
+    public List<AuthenticationUser> getUsersWithoutAuthenticated (@RequestAttribute("authenticatedUser") AuthenticationUser user) {
+       return authenticationService.getUsersWithoutAuthenticated(user);
     }
 
 }

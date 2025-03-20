@@ -2,6 +2,7 @@ package com.linkedIn.backend.features.authentication.model;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.linkedIn.backend.features.feed.model.Post;
+import com.linkedIn.backend.features.messaging.model.Conversation;
 import com.linkedIn.backend.features.notifications.model.Notification;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Email;
@@ -54,6 +55,14 @@ public class AuthenticationUser
     @JsonIgnore
     @OneToMany(mappedBy = "author", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Post> posts;
+
+    @JsonIgnore
+    @OneToMany(mappedBy = "author", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<Conversation> conversationsAsAuthor;
+
+    @JsonIgnore
+    @OneToMany(mappedBy = "recipient", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<Conversation> conversationsAsRecipient;
 
     public AuthenticationUser(String email, String password){
         this.password = password;
@@ -221,6 +230,22 @@ public class AuthenticationUser
 
     public void setReceiveNotifications(List<Notification> receiveNotifications) {
         this.receiveNotifications = receiveNotifications;
+    }
+
+    public List<Conversation> getConversationsAsAuthor() {
+        return conversationsAsAuthor;
+    }
+
+    public void setConversationsAsAuthor(List<Conversation> conversationsAsAuthor) {
+        this.conversationsAsAuthor = conversationsAsAuthor;
+    }
+
+    public List<Conversation> getConversationsAsRecipient() {
+        return conversationsAsRecipient;
+    }
+
+    public void setConversationsAsRecipient(List<Conversation> conversationsAsRecipient) {
+        this.conversationsAsRecipient = conversationsAsRecipient;
     }
 
 }

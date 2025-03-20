@@ -4,6 +4,7 @@ import com.linkedIn.backend.features.authentication.model.AuthenticationUser;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -11,4 +12,6 @@ import java.util.UUID;
 public interface AuthenticaltionUserRepository  extends JpaRepository<AuthenticationUser, UUID> {
     Optional<AuthenticationUser> findByEmail(String email);
     Optional<AuthenticationUser> findById(UUID id);
+
+    List<AuthenticationUser> findAllByIdNot(UUID id);
 }

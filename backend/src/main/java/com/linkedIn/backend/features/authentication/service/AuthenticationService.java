@@ -18,6 +18,7 @@ import org.springframework.stereotype.Service;
 
 import java.security.SecureRandom;
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -198,5 +199,13 @@ public class AuthenticationService {
                     .executeUpdate();
         }
         authenticatedUserRepository.deleteById(userId);
+    }
+
+    public List<AuthenticationUser> getUsersWithoutAuthenticated(AuthenticationUser user) {
+        return authenticatedUserRepository.findAllByIdNot(user.getId());
+    }
+
+    public AuthenticationUser getUserById(UUID receiverId) {
+        return authenticatedUserRepository.findById(receiverId).orElseThrow(() -> new IllegalArgumentException("User not found"));
     }
 }
