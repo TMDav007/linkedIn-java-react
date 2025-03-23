@@ -107,7 +107,7 @@ export function Posts({ post, setPosts }: PostProps) {
       endpoint: `/api/v1/feed/posts/${id}`,
       method: "DELETE",
       onSuccess: () => {
-        setPosts((prev) => prev.filter((p) => p.id !== id));
+        setPosts?.((prev) => prev.filter((p) => p.id !== id));
       },
       onFailure: (error) => {
         console.error(error);

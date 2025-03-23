@@ -18,6 +18,8 @@ import Profile from "./features/authentication/pages/Profile/Profile";
 import Feed from "./features/feed/pages/Feed/Feed";
 import Notifications from "./features/feed/pages/Notifications/Notifications";
 import PostPage from "./features/feed/pages/Post/Post";
+import Messaging from "./features/messaging/pages/Messaging/Messaging";
+import Conversation from "./features/messaging/pages/Conversations/Conversation";
 
 const router = createBrowserRouter([
   {
@@ -55,7 +57,13 @@ const router = createBrowserRouter([
           },
           {
             path: "messaging",
-            element: <div>psts</div>,
+            element: <Messaging />,
+            children: [
+              {
+                path: "conversations/:id",
+                element: <Conversation />,
+              },
+            ],
             // children: [
             //   {
             //     path: "conversations/:id",
@@ -112,7 +120,7 @@ const router = createBrowserRouter([
 ]);
 
 createRoot(document.getElementById("root")!).render(
-  <StrictMode >
+  <StrictMode>
     <RouterProvider router={router} />
   </StrictMode>
 );
