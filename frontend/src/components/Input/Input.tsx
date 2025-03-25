@@ -1,10 +1,7 @@
-import React, { InputHTMLAttributes } from "react";
 import classes from "./Input.module.scss";
+import { InputProps } from "./InputProps";
 
-type InputProps = InputHTMLAttributes<HTMLInputElement> & {
-  label?: string;
-  size?: "small" | "medium" | "large";
-};
+
 function Input({ label, size, width, ...otherProps }: InputProps) {
   return (
     <div className={`${classes.root} ${classes[size || "large"]}`}>
@@ -13,11 +10,9 @@ function Input({ label, size, width, ...otherProps }: InputProps) {
           {label}
         </label>
       ) : null}
-      <input {...otherProps} 
-      style={{width: width? `${width}px` : "100%" }}
-      />
+      <input {...otherProps} style={{ width: width ? `${width}px` : "100%" }} />
     </div>
   );
-} 
+}
 
 export default Input;

@@ -8,6 +8,7 @@ import { useWebSocket } from "../../features/websocket/Ws";
 import { INotification } from "../../features/feed/pages/Notifications/Notifications";
 import { request } from "../../utils/api";
 import { IConversation } from "../../features/messaging/components/Conversations/Conversations";
+import { IConnection } from "../../features/networking/components/Connection/Connection";
 
 export default function Header() {
   const { user } = useAuthentication();
@@ -18,6 +19,7 @@ export default function Header() {
   );
   const [notifications, setNotification] = useState<INotification[]>([]);
   const [conversations, setConversations] = useState<IConversation[]>([]);
+  const [invitations, setInvitations] = useState<IConnection[]>([]);
   const nonReadMessagesCount = conversations.reduce(
     (acc, conversation) =>
       acc +
@@ -72,23 +74,94 @@ export default function Header() {
     return () => subscription?.unsubscribe();
   }, [webSocketClient, user.id]);
 
- 
-
   useEffect(() => {
     const subscription = webSocketClient?.subscribe(
       `/topic/users/${user?.id}/conversations`,
       (message) => {
         const conversation = JSON.parse(message.body);
         setConversations((prevConversations) => {
-          const index = prevConversations.findIndex((c) => c.id === conversation.id);
+          const index = prevConversations.findIndex(
+            (c) => c.id === conversation.id
+          );
           if (index === -1) {
             if (conversation.author.id === user?.id) return prevConversations;
             return [conversation, ...prevConversations];
           }
-          return prevConversations.map((c) => (c.id === conversation.id ? conversation : c));
+          return prevConversations.map((c) =>
+            c.id === conversation.id ? conversation : c
+          );
         });
       }
     );
+    return () => subscription?.unsubscribe();
+  }, [user?.id, webSocketClient]);
+
+  useEffect(() => {
+    request<IConnection[]>({
+      endpoint: "/api/v1/networking/connections?status=PENDING",
+      onSuccess: (data) =>
+        setInvitations(
+          data.filter((c) => !c.seen && c.recipient.id === user?.id)
+        ),
+      onFailure: (error) => console.log(error),
+    });
+  }, [user?.id]);
+
+  useEffect(() => {
+    const subscription = webSocketClient?.subscribe(
+      "/topic/users/" + user?.id + "/connections/new",
+      (data) => {
+        const connection = JSON.parse(data.body);
+        setInvitations((connections) =>
+          connection.recipient.id === user?.id
+            ? [connection, ...connections]
+            : connections
+        );
+      }
+    );
+
+    return () => subscription?.unsubscribe();
+  }, [user?.id, webSocketClient]);
+
+  useEffect(() => {
+    const subscription = webSocketClient?.subscribe(
+      "/topic/users/" + user?.id + "/connections/accepted",
+      (data) => {
+        const connection = JSON.parse(data.body);
+        setInvitations((invitations) =>
+          invitations.filter((c) => c.id !== connection.id)
+        );
+      }
+    );
+
+    return () => subscription?.unsubscribe();
+  }, [user?.id, webSocketClient]);
+
+  useEffect(() => {
+    const subscription = webSocketClient?.subscribe(
+      "/topic/users/" + user?.id + "/connections/remove",
+      (data) => {
+        const connection = JSON.parse(data.body);
+        setInvitations((invitations) =>
+          invitations.filter((c) => c.id !== connection.id)
+        );
+      }
+    );
+
+    return () => subscription?.unsubscribe();
+  }, [user?.id, webSocketClient]);
+
+  useEffect(() => {
+    const subscription = webSocketClient?.subscribe(
+      "/topic/users/" + user?.id + "/connections/seen",
+      (data) => {
+        const connection = JSON.parse(data.body);
+        setInvitations((invitations) =>
+          invitations.filter((c) => c.id !== connection.id)
+        );
+      }
+    );
+
     return () => subscription?.unsubscribe();
   }, [user?.id, webSocketClient]);
 
@@ -106,7 +179,7 @@ export default function Header() {
               <path d="M20.5 2h-17A1.5 1.5 0 002 3.5v17A1.5 1.5 0 003.5 22h17a1.5 1.5 0 001.5-1.5v-17A1.5 1.5 0 0020.5 2zM8 19H5v-9h3zM6.5 8.25A1.75 1.75 0 118.3 6.5a1.78 1.78 0 01-1.8 1.75zM19 19h-3v-4.74c0-1.42-.6-1.93-1.38-1.93A1.74 1.74 0 0013 14.19a.66.66 0 000 .14V19h-3v-9h2.9v1.3a3.11 3.11 0 012.7-1.4c1.55 0 3.36.86 3.36 3.66z"></path>
             </svg>
           </NavLink>
-          <Input placeholder="Search" size={"medium"} />
+          <Input size="medium" placeholder="Search" />
         </div>
         <div className={classes.right}>
           {showNavigationMenu ? (
@@ -155,9 +228,9 @@ export default function Header() {
                     <path d="M12 16v6H3v-6a3 3 0 013-3h3a3 3 0 013 3zm5.5-3A3.5 3.5 0 1014 9.5a3.5 3.5 0 003.5 3.5zm1 2h-2a2.5 2.5 0 00-2.5 2.5V22h7v-4.5a2.5 2.5 0 00-2.5-2.5zM7.5 2A4.5 4.5 0 1012 6.5 4.49 4.49 0 007.5 2z"></path>
                   </svg>
                   <div>
-                    {/* {invitations.length > 0 && !location.pathname.includes("network") ? (
+                    {invitations.length > 0 && !location.pathname.includes("network") ? (
                       <span className={classes.badge}>{invitations.length}</span>
-                    ) : null} */}
+                    ) : null}
                     <span>Network</span>
                   </div>
                 </NavLink>
@@ -182,8 +255,11 @@ export default function Header() {
                     <path d="M16 4H8a7 7 0 000 14h4v4l8.16-5.39A6.78 6.78 0 0023 11a7 7 0 00-7-7zm-8 8.25A1.25 1.25 0 119.25 11 1.25 1.25 0 018 12.25zm4 0A1.25 1.25 0 1113.25 11 1.25 1.25 0 0112 12.25zm4 0A1.25 1.25 0 1117.25 11 1.25 1.25 0 0116 12.25z"></path>
                   </svg>
                   <div>
-                    {nonReadMessagesCount > 0 && !location.pathname.includes("messaging") ? (
-                      <span className={classes.badge}>{nonReadMessagesCount}</span>
+                    {nonReadMessagesCount > 0 &&
+                    !location.pathname.includes("messaging") ? (
+                      <span className={classes.badge}>
+                        {nonReadMessagesCount}
+                      </span>
                     ) : null}
                     <span>Messaging</span>
                   </div>

@@ -59,7 +59,7 @@ function Conversation(props: ConversationItemProps) {
     >
       <img
         className={classes.avatar}
-        src={conversationUserToDisplay?.profilePicture}
+        src={conversationUserToDisplay?.profilePicture || "/avatar.svg"}
         alt=""
       />
       {unreadMessagesCount > 0 && (

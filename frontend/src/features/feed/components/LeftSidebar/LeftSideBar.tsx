@@ -1,9 +1,48 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import classes from "./LeftSideBar.module.scss";
 import { useAuthentication } from "../../../authentication/contexts/AuthenticationContextProvider";
+import { IConnection } from "../../../networking/components/Connection/Connection";
+import { useWebSocket } from "../../../websocket/Ws";
+import { request } from "../../../../utils/api";
 
 export default function LeftSideBar() {
   const { user } = useAuthentication();
+  const [connections, setConnections] = useState<IConnection[]>([]);
+  const ws = useWebSocket();
+
+  useEffect(() => {
+    request<IConnection[]>({
+      endpoint: "/api/v1/networking/connections",
+      onSuccess: (data) => setConnections(data),
+      onFailure: (error) => console.log(error),
+    });
+  }, []);
+
+  useEffect(() => {
+    const subscription = ws?.subscribe(
+      "/topic/users/" + user?.id + "/connections/accepted",
+      (data) => {
+        const connection = JSON.parse(data.body);
+        setConnections((connections) => [...connections, connection]);
+      }
+    );
+
+    return () => subscription?.unsubscribe();
+  }, [user?.id, ws]);
+
+  useEffect(() => {
+    const subscription = ws?.subscribe(
+      "/topic/users/" + user?.id + "/connections/remove",
+      (data) => {
+        const connection = JSON.parse(data.body);
+        setConnections((connections) =>
+          connections.filter((c) => c.id !== connection.id)
+        );
+      }
+    );
+
+    return () => subscription?.unsubscribe();
+  }, [user?.id, ws]);
 
   return (
     <div className={classes.root}>
@@ -25,14 +64,17 @@ export default function LeftSideBar() {
       <div className={classes.info}>
         <div className={classes.item}>
           <div className={classes.label}>Profile viewers</div>
-          <div className={classes.value}>1234</div>
+          <div className={classes.value}>0</div>
         </div>
         <div className={classes.item}>
           <div className={classes.label}>Connections</div>
           <div className={classes.value}>
             {" "}
-            4,567
-            {/* {connections.filter((connection) => connection.status === "ACCEPTED").length} */}
+            {
+              connections.filter(
+                (connection) => connection.status === "ACCEPTED"
+              ).length
+            }
           </div>
         </div>
       </div>

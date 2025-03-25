@@ -1,13 +1,16 @@
 import { FormEvent, useEffect, useState } from "react";
 import classes from "./Conversation.module.scss";
 import { IConversation } from "../../components/Conversations/Conversations";
-import { useAuthentication, User } from "../../../authentication/contexts/AuthenticationContextProvider";
+import {
+  useAuthentication,
+  User,
+} from "../../../authentication/contexts/AuthenticationContextProvider";
 import { useNavigate, useParams } from "react-router-dom";
 import { useWebSocket } from "../../../websocket/Ws";
 import { request } from "../../../../utils/api";
 import Input from "../../../../components/Input/Input";
 import { Messages } from "../../components/Messages/messages";
-
+import { IConnection } from "../../../networking/components/Connection/Connection";
 
 function Conversation() {
   const [postingMessage, setPostingMessage] = useState<boolean>(false);
@@ -56,9 +59,12 @@ function Conversation() {
   useEffect(() => {
     if (id == "new") {
       setConversation(null);
-      request<User[]>({
-        endpoint: "/api/v1/authentication/users",
-        onSuccess: (data) => setSuggestingUsers(data),
+      request<IConnection[]>({
+        endpoint: "/api/v1/networking/connections",
+        onSuccess: (data) =>
+          setSuggestingUsers(
+            data.map((c) => (c.author.id === user?.id ? c.recipient : c.author))
+          ),
         onFailure: (error) => console.log(error),
       });
     } else {
@@ -160,7 +166,7 @@ function Conversation() {
             <div className={classes.top}>
               <img
                 className={classes.avatar}
-                src={conversationUserToDisplay?.profilePicture}
+                src={conversationUserToDisplay?.profilePicture || "/avatar.svg"}
                 alt=""
               />
               <div>
@@ -185,6 +191,7 @@ function Conversation() {
               </p>
               {!slectedUser && (
                 <Input
+                  disabled={suggestingUsers.length === 0}
                   type="text"
                   name="recipient"
                   placeholder="Type a name"
@@ -260,10 +267,15 @@ function Conversation() {
                     ))}
                 </div>
               )}
+              {suggestingUsers.length === 0 && (
+                <div>You need to have connections to start a conversation.</div>
+              )}
             </form>
           )}
-          {conversation && <Messages messages={conversation.messages} user={user} />}
-   
+          {conversation && (
+            <Messages messages={conversation.messages} user={user} />
+          )}
+
           <form
             className={classes.form}
             onSubmit={async (e) => {
@@ -287,7 +299,11 @@ function Conversation() {
             <button
               type="submit"
               className={classes.send}
-              disabled={postingMessage || !content.trim()}
+              disabled={
+                postingMessage ||
+                !content.trim() ||
+                (creatingNewConversation && !slectedUser)
+              }
             >
               <svg
                 xmlns="http://www.w3.org/2000/svg"

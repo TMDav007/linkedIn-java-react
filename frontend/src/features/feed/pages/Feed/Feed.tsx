@@ -9,20 +9,19 @@ import { Post, Posts } from "../../components/Post/Post";
 import { useAuthentication } from "../../../authentication/contexts/AuthenticationContextProvider";
 import { request } from "../../../../utils/api";
 import Button from "../../../../components/Button/Button";
+import { useWebSocket } from "../../../websocket/Ws";
 
 export default function Feed() {
   const { user, logout } = useAuthentication();
-  const [feedContent, setFeedContent] = useState<"all" | "connections">(
-    "connections"
-  );
   const navigate = useNavigate();
   const [showPostingModal, setShowPostingModal] = useState(false);
   const [posts, setPosts] = useState<Post[]>([]);
   const [error, setError] = useState("");
 
+  const ws = useWebSocket();
 
   useEffect(() => {
-    const endpoint = `/api/v1/feed${feedContent === "connections" ? "" :'/posts'}`;
+    const endpoint = "/api/v1/feed";
     const fetchPosts = async () => {
       await request<Post[]>({
         endpoint,
@@ -32,7 +31,19 @@ export default function Feed() {
     };
 
     fetchPosts();
-  }, [feedContent]);
+  }, []);
+
+  useEffect(() => {
+    const subscription = ws?.subscribe(
+      `/topic/feed/${user?.id}/post`,
+      (data) => {
+        const post = JSON.parse(data.body);
+        setPosts((posts) => [post, ...posts]);
+      }
+    );
+    return () => subscription?.unsubscribe();
+  }, [user?.id, ws]);
+
   return (
     <div className={classes.root}>
       <div className={classes.left}>
@@ -63,26 +74,16 @@ export default function Feed() {
         </div>
         {/* <div className={classes.feed}></div> */}
         {error && <div className={classes.error}> {error}</div>}
-        <div className={classes.header}>
-          <button
-            className={feedContent === "all" ? classes.active : ""}
-            onClick={() => setFeedContent("all")}
-          >
-            All
-          </button>
-
-          <button
-            className={feedContent === "connections" ? classes.active : ""}
-            onClick={() => setFeedContent("connections")}
-          >
-            Feed
-          </button>
-        </div>
 
         <div className={classes.feed}>
           {posts.map((post) => (
             <Posts key={post.id} post={post} setPosts={setPosts} />
           ))}
+          {posts.length === 0 && (
+            <p>
+              Start connecting with people to build a feed that matters to you.
+            </p>
+          )}
         </div>
       </div>
       <div className={classes.right}>
