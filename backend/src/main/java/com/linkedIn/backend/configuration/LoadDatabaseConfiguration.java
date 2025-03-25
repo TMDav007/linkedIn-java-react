@@ -5,6 +5,9 @@ import com.linkedIn.backend.features.authentication.repository.AuthenticaltionUs
 import com.linkedIn.backend.features.authentication.utils.Encoder;
 import com.linkedIn.backend.features.feed.model.Post;
 import com.linkedIn.backend.features.feed.repository.PostRepository;
+import com.linkedIn.backend.features.networking.model.Connection;
+import com.linkedIn.backend.features.networking.model.Status;
+import com.linkedIn.backend.features.networking.respository.ConnectionRepository;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -24,10 +27,10 @@ public class LoadDatabaseConfiguration {
     }
 
     @Bean
-    CommandLineRunner initDatabase (AuthenticaltionUserRepository authenticaltionUserRepository, PostRepository postRepository) {
+    public CommandLineRunner initDatabase (AuthenticaltionUserRepository authenticaltionUserRepository, PostRepository postRepository, ConnectionRepository connectionRepository) {
         return args -> {
             List<AuthenticationUser> users = createUsers(authenticaltionUserRepository);
-            //createConnections(connectionRepository, users);
+            createConnections(connectionRepository, users);
             createPosts(postRepository, users);
         };
     }
@@ -65,6 +68,23 @@ public class LoadDatabaseConfiguration {
         return user;
     }
 
+    private void createConnections(ConnectionRepository connectionRepository, List<AuthenticationUser> users) {
+        Random random = new Random();
+
+        for (int i = 0; i < users.size(); i++) {
+            AuthenticationUser author = users.get(random.nextInt(users.size()));
+            AuthenticationUser recipient;
+            do {
+                recipient = users.get(random.nextInt(users.size()));
+            } while (author.equals(recipient));
+
+            Connection connection = new Connection(author, recipient);
+            connection.setStatus(Status.ACCEPTED);
+            connectionRepository.save(connection);
+        }
+
+    }
+
     private void createPosts(PostRepository postRepository, List<AuthenticationUser> users) {
         Random random = new Random();
         String[] postContents = {
@@ -91,6 +111,7 @@ public class LoadDatabaseConfiguration {
             postRepository.save(post);
         }
     }
+
 
     private HashSet<AuthenticationUser> generateLikes(List<AuthenticationUser> users, Random random) {
         HashSet<AuthenticationUser> likes = new HashSet<>();

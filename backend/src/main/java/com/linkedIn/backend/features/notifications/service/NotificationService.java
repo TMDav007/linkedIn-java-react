@@ -5,6 +5,8 @@ import com.linkedIn.backend.features.feed.model.Comment;
 import com.linkedIn.backend.features.feed.model.Post;
 import com.linkedIn.backend.features.messaging.model.Conversation;
 import com.linkedIn.backend.features.messaging.model.Message;
+import com.linkedIn.backend.features.networking.model.Connection;
+import com.linkedIn.backend.features.networking.model.Status;
 import com.linkedIn.backend.features.notifications.NotificationType;
 import com.linkedIn.backend.features.notifications.model.Notification;
 import com.linkedIn.backend.features.notifications.repository.NotificationRepository;
@@ -30,6 +32,15 @@ public class NotificationService {
         return notificationRepository.findByRecipientOrderByCreationDateDesc(user);
     }
 
+    public Notification markNotificationAsRead(UUID notificationId) {
+        Notification notification = notificationRepository.findById(notificationId)
+                .orElseThrow(() -> new IllegalArgumentException("Notification not found"));
+        notification.setRead(true);
+        messagingTemplate.convertAndSend("/topic/users/" + notification.getRecipient().getId() + "/notifications",
+                notification);
+        return notificationRepository.save(notification);
+    }
+
     public void sendDeleteNotificationToPost(UUID postId) {
         messagingTemplate.convertAndSend("/topic/posts/" + postId + "/delete", postId);
     }
@@ -38,13 +49,17 @@ public class NotificationService {
         messagingTemplate.convertAndSend("/topic/posts/" + postId + "/edit", post);
     }
 
-    public Notification markNotificationAsRead(UUID notificationId) {
-        Notification notification = notificationRepository.findById(notificationId)
-                .orElseThrow(() -> new IllegalArgumentException("Notification not found"));
-        notification.setRead(true);
-        messagingTemplate.convertAndSend("/topic/users/" + notification.getRecipient().getId() + "/notifications",
-                notification);
-        return notificationRepository.save(notification);
+    public void sendNewPostNotificationToFeed(Post post) {
+        for (Connection connection : post.getAuthor().getInitiatedConnections()) {
+            if (connection.getStatus().equals(Status.ACCEPTED)) {
+                messagingTemplate.convertAndSend("/topic/feed/" + connection.getRecipient().getId() + "/post", post);
+            }
+        }
+        for (Connection connection : post.getAuthor().getReceivedConnections()) {
+            if (connection.getStatus().equals(Status.ACCEPTED)) {
+                messagingTemplate.convertAndSend("/topic/feed/" + connection.getAuthor().getId() + "/post", post);
+            }
+        }
     }
 
     public void sendLikeToPost(UUID postId, Set<AuthenticationUser> likes) {
@@ -98,4 +113,24 @@ public class NotificationService {
     public void sendMessageToConversation(UUID conversationId, Message message) {
         messagingTemplate.convertAndSend("/topic/conversations/" + conversationId + "/messages", message);
     }
+
+    public void sendNewInvitationToUsers(UUID senderId, UUID receiverId, Connection connection) {
+        messagingTemplate.convertAndSend("/topic/users/" + senderId + "/connections/new", connection);
+        messagingTemplate.convertAndSend("/topic/users/" + receiverId + "/connections/new", connection);
+    }
+
+    public void sendInvitationAcceptedToUsers(UUID senderId, UUID receiverId, Connection connection) {
+        messagingTemplate.convertAndSend("/topic/users/" + senderId + "/connections/accepted", connection);
+        messagingTemplate.convertAndSend("/topic/users/" + receiverId + "/connections/accepted", connection);
+    }
+
+    public void sendRemoveConnectionToUsers(UUID senderId, UUID receiverId, Connection connection) {
+        messagingTemplate.convertAndSend("/topic/users/" + senderId + "/connections/remove", connection);
+        messagingTemplate.convertAndSend("/topic/users/" + receiverId + "/connections/remove", connection);
+    }
+
+    public void sendConnectionSeenNotification(UUID id, Connection connection) {
+        messagingTemplate.convertAndSend("/topic/users/" + id + "/connections/seen", connection);
+    }
+
 }

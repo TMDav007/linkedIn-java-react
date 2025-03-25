@@ -7,12 +7,16 @@ import com.linkedIn.backend.features.feed.model.Comment;
 import com.linkedIn.backend.features.feed.model.Post;
 import com.linkedIn.backend.features.feed.repository.CommentRepository;
 import com.linkedIn.backend.features.feed.repository.PostRepository;
+import com.linkedIn.backend.features.networking.model.Connection;
+import com.linkedIn.backend.features.networking.model.Status;
+import com.linkedIn.backend.features.networking.respository.ConnectionRepository;
 import com.linkedIn.backend.features.notifications.service.NotificationService;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Service
 public class FeedService {
@@ -21,19 +25,22 @@ public class FeedService {
     private final AuthenticaltionUserRepository userRepository;
     private final CommentRepository commentRepository;
     private final NotificationService notificationService;
+    private final ConnectionRepository connectionRepository;
 
 
-    public FeedService(PostRepository postRepository, AuthenticaltionUserRepository userRepository, CommentRepository commentRepository, NotificationService notificationService) {
+    public FeedService(PostRepository postRepository, AuthenticaltionUserRepository userRepository, CommentRepository commentRepository, NotificationService notificationService, ConnectionRepository connectionRepository) {
         this.postRepository = postRepository;
         this.userRepository = userRepository;
         this.commentRepository = commentRepository;
         this.notificationService = notificationService;
+        this.connectionRepository = connectionRepository;
     }
 
     public Post createPost(PostDto postDto, UUID authorId) {
         AuthenticationUser author = userRepository.findById(authorId).orElseThrow(() -> new IllegalArgumentException("User not found"));
         Post post = new Post(postDto.getContent(), author);
         post.setPicture(postDto.getPicture());
+        notificationService.sendNewPostNotificationToFeed(post);
         return postRepository.save(post);
     }
 
@@ -46,12 +53,24 @@ public class FeedService {
         }
         post.setPicture(postDto.getPicture());
         post.setContent(postDto.getContent());
-
+        notificationService.sendEditNotificationToPost(postId, post);
         return postRepository.save(post);
     }
 
     public List<Post> getFeedPosts(UUID authenticatedUserId) {
-        return postRepository.findByAuthorIdNotOrderByCreationDateDesc(authenticatedUserId);
+        List<Connection> connections = connectionRepository.findByAuthorIdAndStatusOrRecipientIdAndStatus(
+                authenticatedUserId, Status.ACCEPTED, authenticatedUserId, Status.ACCEPTED
+        );
+
+
+        Set<UUID> connectedUserIds = connections.stream()
+                .map(connection -> connection.getAuthor().getId().equals(authenticatedUserId)
+                        ? connection.getRecipient().getId()
+                        : connection.getAuthor().getId())
+                .collect(Collectors.toSet());
+
+
+        return postRepository.findByAuthorIdInOrderByCreationDateDesc((connectedUserIds));
     }
 
     public List<Post> getAllPosts () {
@@ -64,6 +83,7 @@ public class FeedService {
         if (!post.getAuthor().equals(author)) {
             throw new IllegalArgumentException("You are not allowed to delete this post");
         }
+        notificationService.sendDeleteNotificationToPost(postId);
         postRepository.delete(post);
     }
 

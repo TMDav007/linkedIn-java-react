@@ -3,6 +3,7 @@ package com.linkedIn.backend.features.authentication.model;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.linkedIn.backend.features.feed.model.Post;
 import com.linkedIn.backend.features.messaging.model.Conversation;
+import com.linkedIn.backend.features.networking.model.Connection;
 import com.linkedIn.backend.features.notifications.model.Notification;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Email;
@@ -63,6 +64,14 @@ public class AuthenticationUser
     @JsonIgnore
     @OneToMany(mappedBy = "recipient", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Conversation> conversationsAsRecipient;
+
+    @JsonIgnore
+    @OneToMany(mappedBy = "author", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<Connection> initiatedConnections;
+
+    @JsonIgnore
+    @OneToMany(mappedBy = "recipient", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<Connection> receivedConnections;
 
     public AuthenticationUser(String email, String password){
         this.password = password;
@@ -246,6 +255,22 @@ public class AuthenticationUser
 
     public void setConversationsAsRecipient(List<Conversation> conversationsAsRecipient) {
         this.conversationsAsRecipient = conversationsAsRecipient;
+    }
+
+    public List<Connection> getInitiatedConnections() {
+        return initiatedConnections;
+    }
+
+    public void setInitiatedConnections(List<Connection> initiatedConnections) {
+        this.initiatedConnections = initiatedConnections;
+    }
+
+    public List<Connection> getReceivedConnections() {
+        return receivedConnections;
+    }
+
+    public void setReceivedConnections(List<Connection> receivedConnections) {
+        this.receivedConnections = receivedConnections;
     }
 
 }
