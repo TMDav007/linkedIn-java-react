@@ -7,7 +7,7 @@ import { useAuthentication, User } from "../../contexts/AuthenticationContextPro
 import { useNavigate } from "react-router-dom";
 import { request } from "../../../../utils/api";
 
-export default function Profile() {
+export function Profile() {
   const [step, setStep] = useState(0);
   const [error, setError] = useState("");
   const [data, setData] = useState({

@@ -12,7 +12,6 @@ import {
 } from "../../../authentication/contexts/AuthenticationContextProvider";
 import { useNavigate } from "react-router-dom";
 import Input from "../../../../components/Input/Input";
-import { timeAgo } from "../../../utils/date";
 import Comments, { Comment } from "../Comments/Comments";
 import Modal from "../Modal/Modal";
 import TimeAgo from "../TimeAgo/TimeAgo";
@@ -247,7 +246,7 @@ export function Posts({ post, setPosts }: PostProps) {
               <div className={classes.title}>
                 {post.author.position + " at " + post.author.company}
               </div>
-              <TimeAgo date={post.creationDate} edited={!!post.updatedDate} />
+              <TimeAgo date={post.creationDate} edited={!!post.updatedDate} className={classes.date} />
             </div>
           </div>
           <div>

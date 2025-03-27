@@ -4,9 +4,12 @@ import Button from "../../../../components/Button/Button";
 import { User } from "../../../authentication/contexts/AuthenticationContextProvider";
 import { request } from "../../../../utils/api";
 import { IConnection } from "../../../networking/components/Connection/Connection";
+import { useNavigate, useParams } from "react-router-dom";
 
 export default function RightSidebar() {
   const [suggestions, setSuggestions] = useState<User[]>([]);
+  const navigate = useNavigate();
+  const { id } = useParams();
 
   useEffect(() => {
     request<User[]>({
@@ -25,50 +28,59 @@ export default function RightSidebar() {
       <div className={classes.items}>
         {/* {suggestions.map((suggestion) => { */}
         {/* return ( */}
-        {suggestions.map((suggestion) => {
-          return (
-            <div className={classes.item} key={suggestion.id}>
-              <img
-                src={suggestion.profilePicture || "/avatar.svg"}
-                alt=""
-                className={classes.avatar}
-              />
-              <div className={classes.content}>
-                <div className={classes.name}>
-                  {suggestion.firstName} {suggestion.lastName}
-                </div>
-                <div className={classes.title}>
-                  {suggestion.position} at {suggestion.company}
-                </div>
-                <Button
-                  size="medium"
-                  outline
-                  className={classes.button}
-                  onClick={() => {
-                    request<IConnection>({
-                      endpoint:
-                        "/api/v1/networking/connections?recipientId=" +
-                        suggestion.id,
-                      method: "POST",
-                      onSuccess: () => {
-                        setSuggestions(
-                          suggestions.filter((s) => s.id !== suggestion.id)
-                        );
-                      },
-                      onFailure: (error) => console.log(error),
-                    });
-                  }}
+        {suggestions
+          .filter((s) => s.id != id)
+          .map((suggestion) => {
+            return (
+              <div className={classes.item} key={suggestion.id}>
+                <button
+                  className={classes.avatar}
+                  onClick={() => navigate("/profile/" + suggestion.id)}
                 >
                   + Connect
-                </Button>
+                  <img
+                    src={suggestion.profilePicture || "/avatar.svg"}
+                    alt=""
+                  />
+                </button>
+                <div className={classes.content}>
+                  <button onClick={() => navigate("/profile/" + suggestion.id)}>
+                    <div className={classes.name}>
+                      {suggestion.firstName} {suggestion.lastName}
+                    </div>
+                    <div className={classes.title}>
+                      {suggestion.position} at {suggestion.company}
+                    </div>
+                  </button>
+                  <Button
+                    size="medium"
+                    outline
+                    className={classes.button}
+                    onClick={() => {
+                      request<IConnection>({
+                        endpoint:
+                          "/api/v1/networking/connections?recipientId=" +
+                          suggestion.id,
+                        method: "POST",
+                        onSuccess: () => {
+                          setSuggestions(
+                            suggestions.filter((s) => s.id !== suggestion.id)
+                          );
+                        },
+                        onFailure: (error) => console.log(error),
+                      });
+                    }}
+                  >
+                    + Connect
+                  </Button>
+                </div>
               </div>
-            </div>
-          );
-        })}
+            );
+          })}
 
         {suggestions.length === 0 && (
           <div className={classes.empty}>
-            <p>No suggestions at the moment :(</p>
+            <p>No suggestions  available  at the moment </p>
           </div>
         )}
       </div>

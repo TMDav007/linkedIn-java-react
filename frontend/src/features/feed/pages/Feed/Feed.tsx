@@ -47,7 +47,7 @@ export default function Feed() {
   return (
     <div className={classes.root}>
       <div className={classes.left}>
-        <LeftSideBar />
+        <LeftSideBar user={user} />
       </div>
       <div className={classes.center}>
         <div className={classes.posting}>

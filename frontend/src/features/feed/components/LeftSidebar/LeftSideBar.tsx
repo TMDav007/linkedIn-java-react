@@ -1,22 +1,27 @@
 import React, { useEffect, useState } from "react";
 import classes from "./LeftSideBar.module.scss";
-import { useAuthentication } from "../../../authentication/contexts/AuthenticationContextProvider";
+import { useAuthentication, User } from "../../../authentication/contexts/AuthenticationContextProvider";
 import { IConnection } from "../../../networking/components/Connection/Connection";
 import { useWebSocket } from "../../../websocket/Ws";
 import { request } from "../../../../utils/api";
+import { useNavigate } from "react-router-dom";
 
-export default function LeftSideBar() {
-  const { user } = useAuthentication();
+interface ILeftSidebarProps {
+  user: User | null;
+}
+
+export default function LeftSideBar({user}: ILeftSidebarProps) {
   const [connections, setConnections] = useState<IConnection[]>([]);
   const ws = useWebSocket();
+  const navigate = useNavigate();
 
   useEffect(() => {
     request<IConnection[]>({
-      endpoint: "/api/v1/networking/connections",
+      endpoint: "/api/v1/networking/connections?user.id=" + user?.id,
       onSuccess: (data) => setConnections(data),
       onFailure: (error) => console.log(error),
     });
-  }, []);
+  }, [user?.id]);
 
   useEffect(() => {
     const subscription = ws?.subscribe(
@@ -47,14 +52,11 @@ export default function LeftSideBar() {
   return (
     <div className={classes.root}>
       <div className={classes.cover}>
-        <img
-          src="https://images.unsplash.com/photo-1727163941315-1cc29bb49e54?q=80&w=1932&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D"
-          alt="Cover"
-        />
+      <img src={user?.coverPicture || "/cover.jpeg"} alt="Cover" />
       </div>
-      <div className={classes.avatar}>
+      <button className={classes.avatar} onClick={() => navigate("/profile/" + user?.id)}>
         <img src={user?.profilePicture || "/avatar.svg"} alt="" />
-      </div>
+      </button>
       <div className={classes.name}>
         {user?.firstName + " " + user?.lastName}
       </div>
@@ -62,10 +64,10 @@ export default function LeftSideBar() {
         {user?.position + " at " + user?.company}
       </div>
       <div className={classes.info}>
-        <div className={classes.item}>
+        {/* <div className={classes.item}>
           <div className={classes.label}>Profile viewers</div>
           <div className={classes.value}>0</div>
-        </div>
+        </div> */}
         <div className={classes.item}>
           <div className={classes.label}>Connections</div>
           <div className={classes.value}>

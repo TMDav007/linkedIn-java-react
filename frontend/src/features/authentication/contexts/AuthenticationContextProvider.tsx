@@ -26,6 +26,8 @@ export interface User {
   company?: string;
   position?: string;
   location?: string;
+  coverPicture?: string;
+  about?: string;
   profileComplete: boolean;
 }
 
@@ -91,7 +93,7 @@ export function AuthenticationContextProvider() {
     setIsLoading(true);
     const fetchUser = async () => {
       await request<User>({
-        endpoint: "/api/v1/authentication/user",
+        endpoint: "/api/v1/authentication/users/me",
         onSuccess: (data) => setUser(data),
         onFailure: (error) => {
           console.log(error);

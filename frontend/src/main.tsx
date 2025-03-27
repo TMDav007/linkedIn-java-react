@@ -14,7 +14,7 @@ import VerifyEmail from "./features/authentication/pages/VerifyEmail/VerifyEmail
 import { AuthenticationContextProvider } from "./features/authentication/contexts/AuthenticationContextProvider";
 import AuthenticationLayout from "./features/authentication/components/AuthenticationLayout/AuthenticationLayout";
 import ApplicationLayout from "./components/ApplicationLayout/ApplicationLayout";
-import Profile from "./features/authentication/pages/Profile/Profile";
+import { Profile as LoginProfile } from "./features/authentication/pages/Profile/Profile";
 import Feed from "./features/feed/pages/Feed/Feed";
 import Notifications from "./features/feed/pages/Notifications/Notifications";
 import PostPage from "./features/feed/pages/Post/Post";
@@ -23,6 +23,8 @@ import Conversation from "./features/messaging/pages/Conversations/Conversation"
 import { Network } from "./features/networking/pages/Network/Network";
 import { Invitations } from "./features/networking/pages/Invitations/Invitations";
 import { Connections } from "./features/networking/pages/Connections/Connections";
+import { Profile } from "./features/profile/pages/Profile/Profile";
+import { Posts } from "./features/profile/pages/Posts/Posts";
 
 const router = createBrowserRouter([
   {
@@ -72,9 +74,14 @@ const router = createBrowserRouter([
             path: "notifications",
             element: <Notifications />,
           },
-          // {
-          //   path: "profile/:id",
-          //   element: <Profile />,
+          {
+            path: "profile/:id",
+            element: <Profile />,
+          },
+          {
+            path: "profile/:id/posts",
+            element: <Posts />,
+          },
         ],
       },
       {
@@ -99,7 +106,7 @@ const router = createBrowserRouter([
           },
           {
             path: "profile/:id",
-            element: <Profile />,
+            element: <LoginProfile />,
           },
         ],
       },
