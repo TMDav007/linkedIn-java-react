@@ -47,7 +47,7 @@ public class FeedController {
     }
 
     @PutMapping("/posts/{postId}")
-    public ResponseEntity<Post> editPost(@PathVariable UUID postId,
+    public ResponseEntity<Post> editPost(@PathVariable("postId") UUID postId,
                                          @RequestBody PostDto postDto,
                                          @RequestAttribute("authenticatedUser") AuthenticationUser user) {
         Post post = feedService.editPost(postId, user.getId(), postDto);
@@ -55,60 +55,60 @@ public class FeedController {
     }
 
     @GetMapping("/posts/{postId}")
-    public ResponseEntity<Post> getPost(@PathVariable UUID postId) {
+    public ResponseEntity<Post> getPost(@PathVariable("postId") UUID postId) {
         Post post = feedService.getPost(postId);
         return ResponseEntity.ok(post);
     }
 
     @GetMapping("/posts/user/{userId}")
-    public ResponseEntity<List<Post>> getPostsByUserId(@PathVariable UUID userId) {
+    public ResponseEntity<List<Post>> getPostsByUserId(@PathVariable("userId") UUID userId) {
         List<Post> posts = feedService.getPostsByUserId(userId);
         return ResponseEntity.ok(posts);
     }
 
 
     @DeleteMapping("/posts/{postId}")
-    public ResponseEntity<Response> deletePost(@PathVariable UUID postId,
+    public ResponseEntity<Response> deletePost(@PathVariable("postId") UUID postId,
                                                @RequestAttribute("authenticatedUser") AuthenticationUser user) {
         feedService.deletePost(postId, user.getId());
         return ResponseEntity.ok(new Response("Post deleted successfully."));
     }
 
     @PutMapping("/posts/{postId}/like")
-    public ResponseEntity<Post> likePost(@PathVariable UUID postId, @RequestAttribute("authenticatedUser") AuthenticationUser user) {
+    public ResponseEntity<Post> likePost(@PathVariable("postId") UUID postId, @RequestAttribute("authenticatedUser") AuthenticationUser user) {
         Post post = feedService.likePost(postId, user.getId());
         return ResponseEntity.ok(post);
     }
 
     @GetMapping("/posts/{postId}/likes")
-    public ResponseEntity<Set<AuthenticationUser>> getPostLikes(@PathVariable UUID postId) {
+    public ResponseEntity<Set<AuthenticationUser>> getPostLikes(@PathVariable("postId") UUID postId) {
         Set<AuthenticationUser> likes = feedService.getPostLikes(postId);
 
         return ResponseEntity.ok(likes);
     }
 
     @PostMapping("/posts/{postId}/comments")
-    public ResponseEntity<Comment> addComment(@PathVariable UUID postId, @RequestBody CommentDto commentDto,
+    public ResponseEntity<Comment> addComment(@PathVariable("postId") UUID postId, @RequestBody CommentDto commentDto,
                                               @RequestAttribute("authenticatedUser") AuthenticationUser user) {
         Comment comment = feedService.addComment(postId, user.getId(), commentDto.getContent());
         return ResponseEntity.ok(comment);
     }
 
     @GetMapping("/posts/{postId}/comments")
-    public ResponseEntity<List<Comment>> getComments(@PathVariable UUID postId) {
+    public ResponseEntity<List<Comment>> getComments(@PathVariable("postId") UUID postId) {
         List<Comment> comments = feedService.getPostComments(postId);
         return ResponseEntity.ok(comments);
     }
 
     @DeleteMapping("/comments/{commentId}")
-    public ResponseEntity<Response> deleteComment(@PathVariable UUID commentId,
+    public ResponseEntity<Response> deleteComment(@PathVariable("commentId")  UUID commentId,
                                                   @RequestAttribute("authenticatedUser") AuthenticationUser user) {
         feedService.deleteComment(commentId, user.getId());
         return ResponseEntity.ok(new Response("Comment deleted successfully."));
     }
 
     @PutMapping("/comments/{commentId}")
-    public ResponseEntity<Comment> editComment(@PathVariable UUID commentId, @RequestBody CommentDto commentDto,
+    public ResponseEntity<Comment> editComment(@PathVariable("commentId") UUID commentId, @RequestBody CommentDto commentDto,
                                                @RequestAttribute("authenticatedUser") AuthenticationUser user) {
         Comment comment = feedService.editComment(commentId, user.getId(), commentDto.getContent());
         return ResponseEntity.ok(comment);

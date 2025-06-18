@@ -32,7 +32,6 @@ public class AuthenticationUser
     private LocalDateTime emailVerificationTokenExpiryDate = null;
 
     @JsonIgnore
-    @NotNull
     private String password;
     private String passwordResetToken = null;
     private LocalDateTime passwordResetTokenExpiryDate = null;
@@ -44,6 +43,9 @@ public class AuthenticationUser
     private String location = null;
     private Boolean profileComplete = false;
     private String profilePicture = null;
+    private String about = null;
+    private String coverPicture = null;
+
 
     @JsonIgnore
     @OneToMany(mappedBy = "recipient", cascade = CascadeType.ALL, orphanRemoval = true)
@@ -271,6 +273,22 @@ public class AuthenticationUser
 
     public void setReceivedConnections(List<Connection> receivedConnections) {
         this.receivedConnections = receivedConnections;
+    }
+
+    public String getAbout() {
+        return about;
+    }
+
+    public void setAbout(String about) {
+        this.about = about;
+    }
+
+    public String getCoverPicture() {
+        return coverPicture;
+    }
+
+    public void setCoverPicture(String coverPicture) {
+        this.coverPicture = coverPicture;
     }
 
 }

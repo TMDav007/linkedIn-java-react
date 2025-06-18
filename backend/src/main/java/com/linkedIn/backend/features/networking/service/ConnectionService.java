@@ -73,6 +73,12 @@ public class ConnectionService {
         return connectionRepository.findConnectionsByUserAndStatus(user, status != null ? status : Status.ACCEPTED);
     }
 
+    public List<Connection> getUserConnections(UUID userId, Status status) {
+      AuthenticationUser user = userRepository.findById(userId)
+                .orElseThrow(() -> new IllegalArgumentException("User not found"));
+        return connectionRepository.findConnectionsByUserAndStatus(user, status != null ? status : Status.ACCEPTED);
+    }
+
     public List<AuthenticationUser> getConnectionSuggestions(AuthenticationUser user) {
         List<AuthenticationUser> allUsers = userRepository.findAllByIdNot(user.getId());
         List<Connection> userConnections = connectionRepository.findAllByAuthorOrRecipient(user, user);

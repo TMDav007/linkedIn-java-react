@@ -24,7 +24,7 @@ public class NotificationController {
     }
 
     @PutMapping("/{notificationId}")
-    public Notification markNotificationAsRead(@PathVariable UUID notificationId) {
+    public Notification markNotificationAsRead(@PathVariable("notificationId") UUID notificationId) {
         return notificationService.markNotificationAsRead(notificationId);
     }
 }

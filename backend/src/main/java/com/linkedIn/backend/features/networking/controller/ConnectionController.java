@@ -19,28 +19,31 @@ public class ConnectionController {
     }
 
     @GetMapping("/connections")
-    public List<Connection> getUserConnections(@RequestAttribute("authenticatedUser") AuthenticationUser user, @RequestParam(required = false) Status status) {
+    public List<Connection> getUserConnections(@RequestAttribute("authenticatedUser") AuthenticationUser user, @RequestParam(name="status",required = false) Status status, @RequestParam(name="userId",required = false) UUID userId) {
+       if (userId != null) {
+           return connectionService.getUserConnections(userId, status);
+       }
         return connectionService.getUserConnections(user, status);
     }
 
 
     @PostMapping("/connections")
-    public Connection sendConnectionRequest(@RequestAttribute("authenticatedUser") AuthenticationUser sender, @RequestParam UUID recipientId) {
+    public Connection sendConnectionRequest(@RequestAttribute("authenticatedUser") AuthenticationUser sender, @RequestParam("recipientId")  UUID recipientId) {
         return connectionService.sendConnectionRequest(sender, recipientId);
     }
 
     @PutMapping("/connections/{id}")
-    public Connection acceptConnectionRequest(@RequestAttribute("authenticatedUser") AuthenticationUser recipient, @PathVariable UUID id) {
+    public Connection acceptConnectionRequest(@RequestAttribute("authenticatedUser") AuthenticationUser recipient, @PathVariable("id") UUID id) {
         return connectionService.acceptConnectionRequest(recipient, id);
     }
 
     @DeleteMapping("/connections/{id}")
-    public Connection rejectOrCancelConnection(@RequestAttribute("authenticatedUser") AuthenticationUser recipient, @PathVariable UUID id) {
+    public Connection rejectOrCancelConnection(@RequestAttribute("authenticatedUser") AuthenticationUser recipient, @PathVariable("id")  UUID id) {
         return connectionService.rejectOrCancelConnection(recipient, id);
     }
 
     @PutMapping("/connections/{id}/seen")
-    public Connection markConnectionAsSeen(@RequestAttribute("authenticatedUser") AuthenticationUser user, @PathVariable UUID id) {
+    public Connection markConnectionAsSeen(@RequestAttribute("authenticatedUser") AuthenticationUser user, @PathVariable("id")  UUID id) {
         return connectionService.markConnectionAsSeen(user, id);
     }
 

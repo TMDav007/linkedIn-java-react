@@ -50,7 +50,7 @@ public class AuthenticationFilter extends HttpFilter {
         String path = request.getRequestURI();
 
         // if path include the specified unsecured url, it should not check
-        if (unsecuredEndpoints.contains(path)) {
+        if (unsecuredEndpoints.contains(path) || path.startsWith("/api/v1/authentication/oauth")) {
             chain.doFilter(request, response);
             return;
         }

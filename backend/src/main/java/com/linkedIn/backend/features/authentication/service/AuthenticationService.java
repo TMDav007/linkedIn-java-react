@@ -7,6 +7,7 @@ import com.linkedIn.backend.features.authentication.repository.AuthenticaltionUs
 import com.linkedIn.backend.features.authentication.utils.EmailService;
 import com.linkedIn.backend.features.authentication.utils.Encoder;
 import com.linkedIn.backend.features.authentication.utils.JsonWebToken;
+import io.jsonwebtoken.Claims;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 import jakarta.transaction.Transactional;
@@ -14,11 +15,18 @@ import jakarta.validation.Valid;
 import org.slf4j.ILoggerFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.ParameterizedTypeReference;
+import org.springframework.http.*;
 import org.springframework.stereotype.Service;
+import org.springframework.util.LinkedMultiValueMap;
+import org.springframework.util.MultiValueMap;
+import org.springframework.web.client.RestTemplate;
 
 import java.security.SecureRandom;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -32,14 +40,21 @@ public class AuthenticationService {
     private final JsonWebToken jsonWebToken;
     private final EmailService emailService;
 
+    private final RestTemplate restTemplate;
     @PersistenceContext
     private EntityManager entityManager;
+    @Value("${oauth.google.client.id}")
+    private String googleClientId;
+    @Value("${oauth.google.client.secret}")
+    private String googleClientSecret;
 
-    public AuthenticationService(AuthenticaltionUserRepository authenticatedUserRepository, Encoder encoder, JsonWebToken jsonWebToken, EmailService emailService) {
+    public AuthenticationService(AuthenticaltionUserRepository authenticatedUserRepository, Encoder encoder,
+                                 JsonWebToken jsonWebToken, EmailService emailService, RestTemplate restTemplate) {
         this.authenticatedUserRepository = authenticatedUserRepository;
         this.encoder = encoder;
         this.jsonWebToken = jsonWebToken;
         this.emailService = emailService;
+        this.restTemplate = restTemplate;
     }
 
     public static String generateEmailVerificationToken() {
@@ -103,7 +118,8 @@ public class AuthenticationService {
     }
 
     public AuthenticationResponseBody register(AuthenticationRequestBody registerRequestBody) {
-        AuthenticationUser user =  authenticatedUserRepository.save(new AuthenticationUser(registerRequestBody.getEmail(), encoder.encode(registerRequestBody.getPassword())));
+        AuthenticationUser user =  authenticatedUserRepository.save(new AuthenticationUser(registerRequestBody.email(),
+                encoder.encode(registerRequestBody.password())));
 
          String emailVerificationToken = generateEmailVerificationToken();
          String hashedToken = encoder.encode(emailVerificationToken);
@@ -119,25 +135,70 @@ public class AuthenticationService {
                  """, emailVerificationToken, durationInMinutes); // Include the token in the message body
 
         try{
-            emailService.sendEmail(user.getEmail(), subject, body);
+            emailService.sendEmail(registerRequestBody.email(), subject, body);
         } catch (Exception e) {
             logger.info("Error while sending email; {}", e.getMessage());
         }
-        String authToken = jsonWebToken.generateToken(user.getEmail());
+        String authToken = jsonWebToken.generateToken(registerRequestBody.email());
         return new AuthenticationResponseBody(authToken, "User registered success");
     }
 
     public AuthenticationResponseBody login(AuthenticationRequestBody loginRequestBody) {
         AuthenticationUser user = authenticatedUserRepository.findByEmail(loginRequestBody
-                .getEmail()).orElseThrow(()-> new IllegalArgumentException("User not found"));
+                .email()).orElseThrow(()-> new IllegalArgumentException("User not found"));
 
-        if (!encoder.matches(loginRequestBody.getPassword(), user.getPassword())) {
+        if (!encoder.matches(loginRequestBody.password(), user.getPassword())) {
             throw new IllegalArgumentException("Password is not correct");
         }
 
-        String token = jsonWebToken.generateToken(loginRequestBody.getEmail());
+        String token = jsonWebToken.generateToken(loginRequestBody.email());
         return new AuthenticationResponseBody(token, "Authentication successful!");
 
+    }
+
+    public AuthenticationResponseBody googleLoginOrSignup(String code, String page) {
+        String tokenEndpoint = "https://oauth2.googleapis.com/token";
+        String redirectUri = "http://localhost:5173/authentication/" + page;
+        MultiValueMap<String, String> body = new LinkedMultiValueMap<>();
+
+        body.add("code", code);
+        body.add("client_id", googleClientId);
+        body.add("client_secret", googleClientSecret);
+        body.add("redirect_uri", redirectUri);
+        body.add("grant_type", "authorization_code");
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
+        HttpEntity<MultiValueMap<String, String>> request = new HttpEntity<>(body, headers);
+
+        ResponseEntity<Map<String, Object>> response = restTemplate.exchange(tokenEndpoint, HttpMethod.POST, request,
+                new ParameterizedTypeReference<>() {
+                });
+
+        if (response.getStatusCode() == HttpStatus.OK && response.getBody() != null) {
+            Map<String, Object> responseBody = response.getBody();
+            String idToken = (String) responseBody.get("id_token");
+
+            Claims claims = jsonWebToken.getClaimsFromGoogleOauthIdToken(idToken);
+            String email = claims.get("email", String.class);
+            AuthenticationUser user = authenticatedUserRepository.findByEmail(email).orElse(null);
+
+            if (user == null) {
+                Boolean emailVerified = claims.get("email_verified", Boolean.class);
+                String firstName = claims.get("given_name", String.class);
+                String lastName = claims.get("family_name", String.class);
+                AuthenticationUser newUser = new AuthenticationUser(email, null);
+                newUser.setEmailVerified(emailVerified);
+                newUser.setFirstName(firstName);
+                newUser.setLastName(lastName);
+                authenticatedUserRepository.save(newUser);
+            }
+
+            String token = jsonWebToken.generateToken(email);
+            return new AuthenticationResponseBody(token, "Google authentication succeeded.");
+        } else {
+            throw new IllegalArgumentException("Failed to exchange code for ID token.");
+        }
     }
 
     public void sendPasswordResetToken(String email) {
@@ -178,7 +239,7 @@ public class AuthenticationService {
         }
     }
 
-    public AuthenticationUser updateUserProfile(UUID userId, String firstName, String lastName, String company, String position, String location) {
+    public AuthenticationUser updateUserProfile(UUID userId, String firstName, String lastName, String company, String position, String location, String profilePicture, String coverPicture, String about) {
         AuthenticationUser user = authenticatedUserRepository.findById(userId).orElseThrow(() -> new IllegalArgumentException("User not found"));
 
         if(firstName != null) user.setFirstName(firstName);
@@ -186,6 +247,12 @@ public class AuthenticationService {
         if (company != null) user.setCompany(company);
         if (position != null) user.setPosition(position);
         if (location != null) user.setLocation(location);
+        if (profilePicture != null)
+            user.setProfilePicture(profilePicture);
+        if (coverPicture != null)
+            user.setCoverPicture(coverPicture);
+        if (about != null)
+            user.setAbout(about);
 
         return authenticatedUserRepository.save(user);
     }
@@ -194,11 +261,12 @@ public class AuthenticationService {
     public void deleteUser(UUID userId) {
         AuthenticationUser user = entityManager.find(AuthenticationUser.class, userId);
         if (user != null) {
-            entityManager.createNativeQuery("DELETE FROM posts_likes WHERE user_id = :userId" )
+            entityManager.createNativeQuery("DELETE FROM posts_likes WHERE user_id = :userId")
                     .setParameter("userId", userId)
                     .executeUpdate();
+            entityManager.remove(user);
         }
-        authenticatedUserRepository.deleteById(userId);
+//        authenticatedUserRepository.deleteById(userId);
     }
 
     public List<AuthenticationUser> getUsersWithoutAuthenticated(AuthenticationUser user) {
