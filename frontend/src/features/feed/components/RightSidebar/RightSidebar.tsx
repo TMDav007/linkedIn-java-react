@@ -37,7 +37,7 @@ export default function RightSidebar() {
                   className={classes.avatar}
                   onClick={() => navigate("/profile/" + suggestion.id)}
                 >
-                  + Connect
+    
                   <img
                     src={suggestion.profilePicture || "/avatar.svg"}
                     alt=""

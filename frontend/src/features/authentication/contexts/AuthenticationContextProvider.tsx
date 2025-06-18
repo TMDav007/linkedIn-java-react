@@ -37,9 +37,24 @@ interface AuthContextType {
   login: (email: string, password: string) => Promise<void>;
   logout: () => void;
   signup: (email: string, password: string) => Promise<void>;
+  ouathLogin: (code: string, page: "login" | "signup") => Promise<void>;
 }
 
 const AuthenticationContext = createContext<AuthContextType | null>(null);
+
+const ouathLogin = async (code: string, page: "login" | "signup") => {
+  await request<IAuthenticationResponse>({
+    endpoint: "/api/v1/authentication/oauth/google/login",
+    method: "POST",
+    body: JSON.stringify({ code, page }),
+    onSuccess: ({ token }) => {
+      localStorage.setItem("token", token);
+    },
+    onFailure: (error) => {
+      throw new Error(error);
+    },
+  });
+};
 
 export function useAuthentication() {
   return useContext(AuthenticationContext);
@@ -109,7 +124,12 @@ export function AuthenticationContextProvider() {
   }
 
   if (!isLoading && !user && !isOnAuthPage) {
-    return <Navigate to="/authentication/login" />;
+    return (
+      <Navigate
+        to="/authentication/login"
+        state={{ from: location.pathname }}
+      />
+    );
   }
 
   if (
@@ -143,20 +163,17 @@ export function AuthenticationContextProvider() {
     user.profileComplete &&
     location.pathname.includes("/authentication/profile")
   ) {
-    return <Navigate to="/" />;
+    return <Navigate to={location.state?.from || "/"} />;
   }
 
   if (user && isOnAuthPage) {
-    return <Navigate to="/" />;
+   return <Navigate to={location.state?.from || "/"} />;
   }
 
   return (
     <AuthenticationContext.Provider
-      value={{ user, setUser, login, signup, logout }}
+      value={{ user, setUser, login, signup, logout, ouathLogin }}
     >
-      {user && !user.emailVerified ? (
-        <Navigate to="/authentication/verify-email" />
-      ) : null}
       <Outlet />
     </AuthenticationContext.Provider>
   );

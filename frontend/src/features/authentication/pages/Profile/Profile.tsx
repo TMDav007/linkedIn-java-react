@@ -3,22 +3,25 @@ import classes from "./Profile.module.scss";
 import Box from "../../components/Box/Box";
 import Input from "../../../../components/Input/Input";
 import Button from "../../../../components/Button/Button";
-import { useAuthentication, User } from "../../contexts/AuthenticationContextProvider";
+import {
+  useAuthentication,
+  User,
+} from "../../contexts/AuthenticationContextProvider";
 import { useNavigate } from "react-router-dom";
 import { request } from "../../../../utils/api";
 
 export function Profile() {
   const [step, setStep] = useState(0);
+  const { user, setUser } = useAuthentication();
   const [error, setError] = useState("");
   const [data, setData] = useState({
-    firstName: "",
-    lastName: "",
-    company: "",
-    position: "",
-    location: "",
+    firstName: user?.firstName || "",
+    lastName: user?.lastName || "",
+    company: user?.company || "",
+    position: user?.position || "",
+    location: user?.location || "",
   });
   const navigate = useNavigate();
-  const { user, setUser } = useAuthentication();
 
   const onSubmit = async () => {
     if (!data.firstName || !data.lastName) {
@@ -26,7 +29,7 @@ export function Profile() {
       return;
     }
     if (!data.company || !data.position) {
-      setError("Please fill in your latest company and position."); 
+      setError("Please fill in your latest company and position.");
       return;
     }
     if (!data.location) {
@@ -64,6 +67,7 @@ export function Profile() {
               onChange={(e) =>
                 setData((prev) => ({ ...prev, firstName: e.target.value }))
               }
+              value={data.firstName}
             ></Input>
             <Input
               onFocus={() => setError("")}
@@ -74,6 +78,7 @@ export function Profile() {
               onChange={(e) =>
                 setData((prev) => ({ ...prev, lastName: e.target.value }))
               }
+              value={data.lastName}
             ></Input>
           </div>
         )}
@@ -87,12 +92,14 @@ export function Profile() {
               onChange={(e) =>
                 setData((prev) => ({ ...prev, company: e.target.value }))
               }
+              value={data.company}
             ></Input>
             <Input
               onFocus={() => setError("")}
               onChange={(e) =>
                 setData((prev) => ({ ...prev, position: e.target.value }))
               }
+              value={data.position}
               label="Latest position"
               name="position"
               placeholder="Software Engineer"
@@ -105,6 +112,7 @@ export function Profile() {
             label="Location"
             name="location"
             placeholder="San Francisco, CA"
+            value={data.location}
             onChange={(e) =>
               setData((prev) => ({ ...prev, location: e.target.value }))
             }

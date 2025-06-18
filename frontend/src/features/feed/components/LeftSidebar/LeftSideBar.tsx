@@ -17,7 +17,7 @@ export default function LeftSideBar({user}: ILeftSidebarProps) {
 
   useEffect(() => {
     request<IConnection[]>({
-      endpoint: "/api/v1/networking/connections?user.id=" + user?.id,
+      endpoint: "/api/v1/networking/connections?userId=" + user?.id,
       onSuccess: (data) => setConnections(data),
       onFailure: (error) => console.log(error),
     });
@@ -47,7 +47,7 @@ export default function LeftSideBar({user}: ILeftSidebarProps) {
     );
 
     return () => subscription?.unsubscribe();
-  }, [user?.id, ws]);
+  }, [user?.id,ws]);
 
   return (
     <div className={classes.root}>
