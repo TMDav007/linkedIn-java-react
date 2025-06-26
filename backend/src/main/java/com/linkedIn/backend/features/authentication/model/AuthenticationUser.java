@@ -8,6 +8,8 @@ import com.linkedIn.backend.features.notifications.model.Notification;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotNull;
+import org.hibernate.search.mapper.pojo.mapping.definition.annotation.FullTextField;
+import org.hibernate.search.mapper.pojo.mapping.definition.annotation.Indexed;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -15,6 +17,7 @@ import java.util.UUID;
 
 
 @Entity(name="users")
+@Indexed(index="users")
 public class AuthenticationUser
 {
     @Id
@@ -36,9 +39,13 @@ public class AuthenticationUser
     private String passwordResetToken = null;
     private LocalDateTime passwordResetTokenExpiryDate = null;
 
+    @FullTextField(analyzer = "standard")
     private String firstName = null;
+    @FullTextField(analyzer = "standard")
     private String lastName = null;
+    @FullTextField(analyzer = "standard")
     private String company = null;
+    @FullTextField(analyzer = "standard")
     private String position = null;
     private String location = null;
     private Boolean profileComplete = false;

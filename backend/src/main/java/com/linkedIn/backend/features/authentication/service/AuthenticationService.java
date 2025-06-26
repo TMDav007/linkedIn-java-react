@@ -269,9 +269,9 @@ public class AuthenticationService {
 //        authenticatedUserRepository.deleteById(userId);
     }
 
-    public List<AuthenticationUser> getUsersWithoutAuthenticated(AuthenticationUser user) {
-        return authenticatedUserRepository.findAllByIdNot(user.getId());
-    }
+//    public List<AuthenticationUser> getUsersWithoutAuthenticated(AuthenticationUser user) {
+//        return authenticatedUserRepository.findAllByIdNot(user.getId());
+//    }
 
     public AuthenticationUser getUserById(UUID receiverId) {
         return authenticatedUserRepository.findById(receiverId).orElseThrow(() -> new IllegalArgumentException("User not found"));

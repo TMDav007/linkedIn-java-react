@@ -48,7 +48,8 @@ public class ConnectionController {
     }
 
     @GetMapping("/suggestions")
-    public List<AuthenticationUser> getConnectionSuggestions(@RequestAttribute("authenticatedUser") AuthenticationUser user) {
-        return connectionService.getConnectionSuggestions(user);
+    public List<AuthenticationUser> getConnectionSuggestions(@RequestAttribute("authenticatedUser") AuthenticationUser user,
+                                                             @RequestParam(required = false, defaultValue = "6") Integer limit) {
+        return connectionService.getRecommendations(user.getId(), limit);
     }
 }

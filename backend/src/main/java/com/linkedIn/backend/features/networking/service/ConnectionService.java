@@ -8,9 +8,7 @@ import com.linkedIn.backend.features.networking.respository.ConnectionRepository
 import com.linkedIn.backend.features.notifications.service.NotificationService;
 import org.springframework.stereotype.Service;
 
-import java.util.List;
-import java.util.Set;
-import java.util.UUID;
+import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -105,4 +103,106 @@ public class ConnectionService {
         notificationService.sendConnectionSeenNotification(connection.getRecipient().getId(), connection);
         return connectionRepository.save(connection);
     }
+
+    public List<AuthenticationUser> getRecommendations(UUID userId, Integer limit) {
+        AuthenticationUser user = userRepository.findById(userId)
+                .orElseThrow(() -> new IllegalArgumentException("User not found"));
+
+        Set<AuthenticationUser> secondDegreeConnections = getSecondDegreeConnections(user);
+
+        secondDegreeConnections = secondDegreeConnections.isEmpty() ? new HashSet<>(userRepository.findAllByIdNot(userId)) : secondDegreeConnections;
+
+        List<UserRecommendation> recommendations = new ArrayList<>();
+
+        for (AuthenticationUser potentialConnection : secondDegreeConnections) {
+            if (!potentialConnection.getProfileComplete()) {
+                continue;
+            }
+
+            double score = calculateProfileSimilarity(user, potentialConnection);
+
+            int mutualConnections = countMutualConnections(user, potentialConnection);
+            score += mutualConnections * 0.5;
+
+            recommendations.add(new UserRecommendation(potentialConnection, score));
+        }
+
+        return recommendations.stream()
+                .sorted((r1, r2) -> Double.compare(r2.score(), r1.score()))
+                .limit(limit)
+                .map(UserRecommendation::user)
+                .collect(Collectors.toList());
+    }
+
+    private double calculateProfileSimilarity(AuthenticationUser user1, AuthenticationUser user2) {
+        double score = 0.0;
+
+        if (user1.getCompany().equalsIgnoreCase(user2.getCompany())) {
+            score += 3.0;
+        }
+        if (user1.getPosition().equalsIgnoreCase(user2.getPosition())) {
+            score += 2.0;
+        }
+
+        if (user1.getLocation().equalsIgnoreCase(user2.getLocation())) {
+            score += 1.5;
+        }
+
+        return score;
+    }
+
+    private Set<AuthenticationUser> getSecondDegreeConnections(AuthenticationUser user) {
+        Set<AuthenticationUser> directConnections = new HashSet<>();
+
+        user.getInitiatedConnections().stream()
+                .filter(conn -> conn.getStatus().equals(Status.ACCEPTED))
+                .forEach(conn -> directConnections.add(conn.getRecipient()));
+
+        user.getReceivedConnections().stream()
+                .filter(conn -> conn.getStatus().equals(Status.ACCEPTED))
+                .forEach(conn -> directConnections.add(conn.getAuthor()));
+
+        Set<AuthenticationUser> secondDegreeConnections = new HashSet<>();
+
+        for (AuthenticationUser directConnection : directConnections) {
+            directConnection.getInitiatedConnections().stream()
+                    .filter(conn -> conn.getStatus().equals(Status.ACCEPTED))
+                    .forEach(conn -> secondDegreeConnections.add(conn.getRecipient()));
+
+            directConnection.getReceivedConnections().stream()
+                    .filter(conn -> conn.getStatus().equals(Status.ACCEPTED))
+                    .forEach(conn -> secondDegreeConnections.add(conn.getAuthor()));
+        }
+
+        secondDegreeConnections.remove(user);
+        secondDegreeConnections.removeAll(directConnections);
+
+        return secondDegreeConnections;
+    }
+
+    private int countMutualConnections(AuthenticationUser user1, AuthenticationUser user2) {
+        Set<AuthenticationUser> user1Connections = new HashSet<>();
+
+        user1.getInitiatedConnections().stream()
+                .filter(conn -> conn.getStatus().equals(Status.ACCEPTED))
+                .forEach(conn -> user1Connections.add(conn.getRecipient()));
+        user1.getReceivedConnections().stream()
+                .filter(conn -> conn.getStatus().equals(Status.ACCEPTED))
+                .forEach(conn -> user1Connections.add(conn.getAuthor()));
+
+        Set<AuthenticationUser> user2Connections = new HashSet<>();
+        user2.getInitiatedConnections().stream()
+                .filter(conn -> conn.getStatus().equals(Status.ACCEPTED))
+                .forEach(conn -> user2Connections.add(conn.getRecipient()));
+        user2.getReceivedConnections().stream()
+                .filter(conn -> conn.getStatus().equals(Status.ACCEPTED))
+                .forEach(conn -> user2Connections.add(conn.getAuthor()));
+
+        user1Connections.retainAll(user2Connections);
+        return user1Connections.size();
+    }
+
+    private record UserRecommendation(AuthenticationUser user, double score) {
+    }
+
 }

@@ -90,10 +90,10 @@ public class AuthenticationController {
         return authenticationService.updateUserProfile(id, firstName, lastName, company, position, location, profilePicture, coverPicture, about);
     }
 
-    @GetMapping("/users")
-    public List<AuthenticationUser> getUsersWithoutAuthenticated (@RequestAttribute("authenticatedUser") AuthenticationUser user) {
-       return authenticationService.getUsersWithoutAuthenticated(user);
-    }
+//    @GetMapping("/users")
+//    public List<AuthenticationUser> getUsersWithoutAuthenticated (@RequestAttribute("authenticatedUser") AuthenticationUser user) {
+//       return authenticationService.getUsersWithoutAuthenticated(user);
+//    }
 
 
     @GetMapping("/users/me")
