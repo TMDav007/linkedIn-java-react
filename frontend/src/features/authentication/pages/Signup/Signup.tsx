@@ -40,7 +40,7 @@ function Signup() {
   };
 
   if (isOauthInProgress) {
-    return <Loader />;
+   return <Loader isInline />;
   }
   return (
     <div className={classes.root}>

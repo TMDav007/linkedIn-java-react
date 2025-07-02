@@ -10,9 +10,11 @@ import { useAuthentication } from "../../../authentication/contexts/Authenticati
 import { request } from "../../../../utils/api";
 import Button from "../../../../components/Button/Button";
 import { useWebSocket } from "../../../websocket/Ws";
+import Loader from "../../../../components/Loader/Loader";
 
 export default function Feed() {
   const { user, logout } = useAuthentication();
+  const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
   const [showPostingModal, setShowPostingModal] = useState(false);
   const [posts, setPosts] = useState<Post[]>([]);
@@ -25,7 +27,10 @@ export default function Feed() {
     const fetchPosts = async () => {
       await request<Post[]>({
         endpoint,
-        onSuccess: (data) => setPosts(data),
+        onSuccess: (data) => {
+          setPosts(data);
+          setLoading(false);
+        },
         onFailure: (error) => setError(error),
       });
     };
@@ -44,6 +49,17 @@ export default function Feed() {
     return () => subscription?.unsubscribe();
   }, [user?.id, ws]);
 
+  const handlePost = async (data: FormData) => {
+    await request<Post>({
+      endpoint: "/api/v1/feed/posts",
+      method: "POST",
+      contentType: "multipart/form-data",
+      body: data,
+      onSuccess: (data) => setPosts([data, ...posts]),
+      onFailure: (error) => setError(error),
+    });
+  };
+
   return (
     <div className={classes.root}>
       <div className={classes.left}>
@@ -58,7 +74,13 @@ export default function Feed() {
           >
             <img
               className={`${classes.top} ${classes.avatar}`}
-              src={user?.profilePicture || "/avatar.svg"}
+              src={
+                user?.profilePicture
+                  ? `${import.meta.env.VITE_API_URL}/api/v1/storage/${
+                      user?.profilePicture
+                    }`
+                  : "/avatar.svg"
+              }
               alt=""
             />
           </button>
@@ -67,7 +89,7 @@ export default function Feed() {
           </Button>
           <Modal
             title="Creating a post"
-            onSubmit={async () => {}}
+            onSubmit={handlePost}
             showModal={showPostingModal}
             setShowModal={setShowPostingModal}
           />
@@ -75,16 +97,21 @@ export default function Feed() {
         {/* <div className={classes.feed}></div> */}
         {error && <div className={classes.error}> {error}</div>}
 
-        <div className={classes.feed}>
-          {posts.map((post) => (
-            <Posts key={post.id} post={post} setPosts={setPosts} />
-          ))}
-          {posts.length === 0 && (
-            <p>
-              Start connecting with people to build a feed that matters to you.
-            </p>
-          )}
-        </div>
+        {loading ? (
+          <Loader isInline />
+        ) : (
+          <div className={classes.feed}>
+            {posts.map((post) => (
+              <Posts key={post.id} post={post} setPosts={setPosts} />
+            ))}
+            {posts.length === 0 && (
+              <p>
+                Start connecting with people to build a feed that matters to
+                you.
+              </p>
+            )}
+          </div>
+        )}
       </div>
       <div className={classes.right}>
         <RightSidebar />

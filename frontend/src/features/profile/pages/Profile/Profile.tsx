@@ -12,7 +12,7 @@ import RightSidebar from "../../../feed/components/RightSidebar/RightSidebar";
  export function Profile() {
    const { id } = useParams();
    const [loading, setLoading] = useState(true);
-   const { user: authUser } = useAuthentication();
+   const { user: authUser, setUser: setAuthUser } = useAuthentication();
    const [user, setUser] = useState<User | null>(null);
  
    usePageTitle(user?.firstName + " " + user?.lastName);
@@ -41,17 +41,21 @@ import RightSidebar from "../../../feed/components/RightSidebar/RightSidebar";
    return (
      <div className={classes.profile}>
        <section className={classes.main}>
-         <Header user={user} authUser={authUser} onUpdate={(user) => setUser(user)} />
-         <About user={user} authUser={authUser} onUpdate={(user) => setUser(user)} />
+         <Header user={user} authUser={authUser} onUpdate={(user) => setAuthUser(user)} />
+         <About user={user} authUser={authUser} onUpdate={(user) => setAuthUser(user)} />
          <Activity authUser={authUser} user={user} id={id} />
  
          <div className={classes.experience}>
            <h2>Experience</h2>
-           <p>TODO()</p>
+           <p>TODO</p>
          </div>
          <div className={classes.education}>
            <h2>Education</h2>
-           <p>TODO()</p>
+           <p>TODO</p>
+         </div>
+         <div className={classes.skills}>
+           <h2>Skills</h2>
+           <p>TODO</p>
          </div>
        </section>
        <div className={classes.sidebar}>

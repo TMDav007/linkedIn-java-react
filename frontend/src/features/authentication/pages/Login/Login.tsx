@@ -6,7 +6,7 @@ import Button from "../../../../components/Button/Button";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import Separator from "../../components/Separator/Separator";
 import { useAuthentication } from "../../contexts/AuthenticationContextProvider";
-import useOauth  from "../../hooks/useOauth";
+import useOauth from "../../hooks/useOauth";
 import Loader from "../../../../components/Loader/Loader";
 import { usePageTitle } from "../../../../hooks/usePageTitle";
 
@@ -41,7 +41,7 @@ function Login() {
   };
 
   if (isOauthInProgress) {
-    return <Loader />;
+    return <Loader isInline />;
   }
   return (
     <div className={classes.root}>

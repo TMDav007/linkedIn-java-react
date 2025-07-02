@@ -84,17 +84,23 @@ export function Posts({ post, setPosts }: PostProps) {
   }, [post.id, webSocketClient]);
 
   useEffect(() => {
-    const subscription = webSocketClient?.subscribe(`/topic/posts/${post.id}/delete`, () => {
-      setPosts?.((prev) => prev.filter((p) => p.id !== post.id));
-    });
+    const subscription = webSocketClient?.subscribe(
+      `/topic/posts/${post.id}/delete`,
+      () => {
+        setPosts?.((prev) => prev.filter((p) => p.id !== post.id));
+      }
+    );
     return () => subscription?.unsubscribe();
   }, [post.id, setPosts, webSocketClient]);
 
   useEffect(() => {
-    const subscription = webSocketClient?.subscribe(`/topic/posts/${post.id}/edit`, (data) => {
-      const post = JSON.parse(data.body);
-      setPosts?.((prev) => prev.map((p) => (p.id === post.id ? post : p)));
-    });
+    const subscription = webSocketClient?.subscribe(
+      `/topic/posts/${post.id}/edit`,
+      (data) => {
+        const post = JSON.parse(data.body);
+        setPosts?.((prev) => prev.map((p) => (p.id === post.id ? post : p)));
+      }
+    );
     return () => subscription?.unsubscribe();
   }, [post.id, setPosts, webSocketClient]);
 
@@ -190,11 +196,12 @@ export function Posts({ post, setPosts }: PostProps) {
     });
   };
 
-  const editPost = async (content: string, picture: string) => {
+  const editPost = async (data: FormData) => {
     await request<Post>({
       endpoint: `/api/v1/feed/posts/${post.id}`,
       method: "PUT",
-      body: JSON.stringify({ content, picture }),
+      body: data,
+      contentType: "multipart/form-data",
       onSuccess: (data) => {
         setPosts?.((prev) =>
           prev.map((p) => {
@@ -234,7 +241,13 @@ export function Posts({ post, setPosts }: PostProps) {
             >
               <img
                 className={classes.avatar}
-                src={post?.author?.profilePicture || "/avatar.svg"}
+                src={
+                  post.author.profilePicture
+                    ? `${import.meta.env.VITE_API_URL}/api/v1/storage/${
+                        post.author.profilePicture
+                      }`
+                    : "/avatar.svg"
+                }
                 alt=""
               />
             </button>
@@ -246,7 +259,11 @@ export function Posts({ post, setPosts }: PostProps) {
               <div className={classes.title}>
                 {post.author.position + " at " + post.author.company}
               </div>
-              <TimeAgo date={post.creationDate} edited={!!post.updatedDate} className={classes.date} />
+              <TimeAgo
+                date={post.creationDate}
+                edited={!!post.updatedDate}
+                className={classes.date}
+              />
             </div>
           </div>
           <div>
@@ -272,7 +289,13 @@ export function Posts({ post, setPosts }: PostProps) {
         </div>
         <div className={classes.content}>{post.content}</div>
         {post.picture && (
-          <img src={post.picture} alt="" className={classes.picture} />
+          <img
+            src={`${import.meta.env.VITE_API_URL}/api/v1/storage/${
+              post.picture
+            }`}
+            alt=""
+            className={classes.picture}
+          />
         )}
         <div className={classes.stats}>
           {likes?.length > 0 ? (
