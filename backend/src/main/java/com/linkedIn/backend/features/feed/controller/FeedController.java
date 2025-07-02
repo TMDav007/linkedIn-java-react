@@ -9,6 +9,7 @@ import com.linkedIn.backend.features.feed.model.Post;
 import com.linkedIn.backend.features.feed.services.FeedService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 import java.util.Set;
@@ -40,17 +41,19 @@ public class FeedController {
     }
 
     @PostMapping("/posts")
-    public ResponseEntity<Post> createPost(@RequestBody PostDto postDto,
-                                           @RequestAttribute("authenticatedUser") AuthenticationUser user) {
-        Post post = feedService.createPost(postDto, user.getId());
+    public ResponseEntity<Post> createPost(@RequestParam(value="picture", required = false) MultipartFile picture,
+                                           @RequestParam("content") String content,
+                                           @RequestAttribute("authenticatedUser") AuthenticationUser user) throws Exception {
+        Post post = feedService.createPost(picture, content, user.getId());
         return ResponseEntity.ok(post);
     }
 
     @PutMapping("/posts/{postId}")
     public ResponseEntity<Post> editPost(@PathVariable("postId") UUID postId,
-                                         @RequestBody PostDto postDto,
-                                         @RequestAttribute("authenticatedUser") AuthenticationUser user) {
-        Post post = feedService.editPost(postId, user.getId(), postDto);
+                                         @RequestParam(value="picture", required = false) MultipartFile picture,
+                                         @RequestParam("content") String content,
+                                         @RequestAttribute("authenticatedUser") AuthenticationUser user) throws Exception {
+        Post post = feedService.editPost(postId, user.getId(), picture, content);
         return ResponseEntity.ok(post);
     }
 

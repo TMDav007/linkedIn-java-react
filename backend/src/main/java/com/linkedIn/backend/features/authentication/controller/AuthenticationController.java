@@ -9,8 +9,10 @@ import com.linkedIn.backend.features.authentication.service.AuthenticationServic
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.io.IOException;
 import java.util.List;
 import java.util.UUID;
 
@@ -69,7 +71,7 @@ public class AuthenticationController {
         return new Response("User deleted successfully.");
     }
 
-    @PutMapping("/profile/{id}")
+    @PutMapping("/profile/{id}/info")
     public AuthenticationUser updateUserProfile(
             @RequestAttribute("authenticatedUser") AuthenticationUser user,
             @PathVariable("id") UUID id,
@@ -78,8 +80,6 @@ public class AuthenticationController {
             @RequestParam(name="company",required = false) String company,
             @RequestParam(name="position",required = false) String position,
             @RequestParam(name="location",required = false) String location,
-            @RequestParam(name="profilePicture",required = false) String profilePicture,
-            @RequestParam(name="coverPicture",required = false) String coverPicture,
             @RequestParam(name="about",required = false) String about
 
     ) {
@@ -87,7 +87,35 @@ public class AuthenticationController {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "User does not have permission to update this profile.");
         }
 
-        return authenticationService.updateUserProfile(id, firstName, lastName, company, position, location, profilePicture, coverPicture, about);
+        return authenticationService.updateUserProfile(user, firstName, lastName, company, position, location, about);
+    }
+
+    @PutMapping("/profile/{id}/profile-picture")
+    public AuthenticationUser updateProfilePicture(
+            @RequestAttribute("authenticatedUser") AuthenticationUser user,
+            @PathVariable("id") UUID id,
+            @RequestParam(value = "profilePicture", required = false) MultipartFile profilePicture) throws IOException {
+
+        if (!user.getId().equals(id)) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN,
+                    "User does not have permission to update this profile picture.");
+        }
+
+        return authenticationService.updateProfilePicture(user, profilePicture);
+    }
+
+    @PutMapping("/profile/{id}/cover-picture")
+    public AuthenticationUser updateCoverPicture(
+            @RequestAttribute("authenticatedUser") AuthenticationUser user,
+            @PathVariable("id") UUID id,
+            @RequestParam(value="coverPicture",required = false) MultipartFile coverPicture) throws IOException {
+
+        if (!user.getId().equals(id)) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN,
+                    "User does not have permission to update this cover picture.");
+        }
+
+        return authenticationService.updateCoverPicture(user, coverPicture);
     }
 
 //    @GetMapping("/users")

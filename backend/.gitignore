@@ -7,6 +7,9 @@ build/
 
 lucene
 
+uploads/*
+!uploads/.gitkeep
+
 ### STS ###
 .apt_generated
 .classpath

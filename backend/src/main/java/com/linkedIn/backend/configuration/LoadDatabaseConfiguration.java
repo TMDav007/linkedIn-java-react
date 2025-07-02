@@ -29,7 +29,8 @@ public class LoadDatabaseConfiguration {
     }
 
     @Bean
-    public CommandLineRunner initDatabase (AuthenticaltionUserRepository authenticaltionUserRepository, PostRepository postRepository, ConnectionRepository connectionRepository) {
+    public CommandLineRunner initDatabase (AuthenticaltionUserRepository authenticaltionUserRepository,
+                                           PostRepository postRepository, ConnectionRepository connectionRepository) {
         return args -> {
             List<AuthenticationUser> users = createUsers(authenticaltionUserRepository);
             createConnections(connectionRepository, users);
@@ -72,16 +73,16 @@ public class LoadDatabaseConfiguration {
                 "Dubai, AE", "Dakar, SN", "Bangalore, IN", "Seoul, KR", "Cape Town, ZA",
                 "Mumbai, IN", "Shanghai, CN", "São Paulo, BR", "Mexico City, MX", "Dublin, IE");
 
-        List<String> profilePictures = Arrays.asList(
-                "https://images.unsplash.com/photo-1494790108377-be9c29b29330",
-                "https://images.unsplash.com/photo-1586297135537-94bc9ba060aa",
-                "https://images.unsplash.com/photo-1640951613773-54706e06851d",
-                "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde",
-                "https://images.unsplash.com/photo-1527980965255-d3b416303d12",
-                "https://images.unsplash.com/photo-1438761681033-6461ffad8d80",
-                "https://images.unsplash.com/photo-1630208232589-e42b29428b19",
-                "https://images.unsplash.com/photo-1619895862022-09114b41f16f"
-        );
+//        List<String> profilePictures = Arrays.asList(
+//                "https://images.unsplash.com/photo-1494790108377-be9c29b29330",
+//                "https://images.unsplash.com/photo-1586297135537-94bc9ba060aa",
+//                "https://images.unsplash.com/photo-1640951613773-54706e06851d",
+//                "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde",
+//                "https://images.unsplash.com/photo-1527980965255-d3b416303d12",
+//                "https://images.unsplash.com/photo-1438761681033-6461ffad8d80",
+//                "https://images.unsplash.com/photo-1630208232589-e42b29428b19",
+//                "https://images.unsplash.com/photo-1619895862022-09114b41f16f"
+//        );
 
         List<AuthenticationUser> users = new ArrayList<>();
         for (int i = 0; i < NUM_USERS; i++) {
@@ -91,27 +92,24 @@ public class LoadDatabaseConfiguration {
             String position = positions.get(random.nextInt(positions.size()));
             String company = companies.get(random.nextInt(companies.size()));
             String location = locations.get(random.nextInt(locations.size()));
-            String profilePicture = i < profilePictures.size() ? profilePictures.get(i) : null;
+           // String profilePicture = i < profilePictures.size() ? profilePictures.get(i) : null;
 
-            users.add(createUser(email, lastName, firstName, lastName, position, company, location, profilePicture));
+            users.add(createUser(email, lastName, firstName, lastName, position, company, location, null));
         }
 
         users.addAll(List.of(
                 createUser("john.doe@example.com", "john", "John", "Doe",
                         positions.get(random.nextInt(positions.size())),
                         companies.get(random.nextInt(companies.size())),
-                        locations.get(random.nextInt(locations.size())),
-                        "https://images.unsplash.com/photo-1633332755192-727a05c4013d"),
+                        locations.get(random.nextInt(locations.size())),null),
                 createUser("anne.claire@example.com", "anne", "Anne", "Claire",
                         positions.get(random.nextInt(positions.size())),
                         companies.get(random.nextInt(companies.size())),
-                        locations.get(random.nextInt(locations.size())),
-                        "https://images.unsplash.com/photo-1494790108377-be9c29b29330"),
+                        locations.get(random.nextInt(locations.size())),null),
                 createUser("arnauld.manner@example.com", "arnauld", "Arnauld", "Manner",
                         positions.get(random.nextInt(positions.size())),
                         companies.get(random.nextInt(companies.size())),
-                        locations.get(random.nextInt(locations.size())),
-                        "https://images.unsplash.com/photo-1640960543409-dbe56ccc30e2")
+                        locations.get(random.nextInt(locations.size())),null)
         ));
         return authenticaltionUserRepository.saveAll(users);
 
@@ -173,12 +171,12 @@ public class LoadDatabaseConfiguration {
                 "Cybersecurity", "Data Science", "IoT", "5G", "Quantum Computing", "AR/VR", "Digital Transformation",
                 "Agile Development", "Remote Work", "Tech Leadership");
 
-        List<String> postImages = Arrays.asList(
-                "https://images.unsplash.com/photo-1731176497854-f9ea4dd52eb6",
-                "https://images.unsplash.com/photo-1504384764586-bb4cdc1707b0",
-                "https://images.unsplash.com/photo-1553877522-43269d4ea984",
-                "https://images.unsplash.com/photo-1531297484001-80022131f5a1"
-        );
+//        List<String> postImages = Arrays.asList(
+//                "https://images.unsplash.com/photo-1731176497854-f9ea4dd52eb6",
+//                "https://images.unsplash.com/photo-1504384764586-bb4cdc1707b0",
+//                "https://images.unsplash.com/photo-1553877522-43269d4ea984",
+//                "https://images.unsplash.com/photo-1531297484001-80022131f5a1"
+//        );
 
         for (AuthenticationUser user : users) {
             int numPosts = random.nextInt(MAX_POSTS_PER_USER - MIN_POSTS_PER_USER + 1) + MIN_POSTS_PER_USER;
@@ -191,10 +189,10 @@ public class LoadDatabaseConfiguration {
                 Post post = new Post(content, user);
                 post.setLikes(generateLikes(users, random));
 
-                // Add an image to ~20% of postsMore actions
-                if (random.nextInt(5) == 0) {
-                    post.setPicture(postImages.get(random.nextInt(postImages.size())));
-                }
+//                // Add an image to ~20% of postsMore actions
+//                if (random.nextInt(5) == 0) {
+//                    post.setPicture(postImages.get(random.nextInt(postImages.size())));
+//                }
 
                 postRepository.save(post);
             }

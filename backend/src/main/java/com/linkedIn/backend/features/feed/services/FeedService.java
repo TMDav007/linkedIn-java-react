@@ -11,8 +11,12 @@ import com.linkedIn.backend.features.networking.model.Connection;
 import com.linkedIn.backend.features.networking.model.Status;
 import com.linkedIn.backend.features.networking.respository.ConnectionRepository;
 import com.linkedIn.backend.features.notifications.service.NotificationService;
+import com.linkedIn.backend.features.storage.service.StorageService;
 import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
@@ -26,33 +30,45 @@ public class FeedService {
     private final CommentRepository commentRepository;
     private final NotificationService notificationService;
     private final ConnectionRepository connectionRepository;
+    private final StorageService storageService;
 
 
-    public FeedService(PostRepository postRepository, AuthenticaltionUserRepository userRepository, CommentRepository commentRepository, NotificationService notificationService, ConnectionRepository connectionRepository) {
+    public FeedService(PostRepository postRepository, AuthenticaltionUserRepository userRepository, CommentRepository commentRepository, NotificationService notificationService, ConnectionRepository connectionRepository, StorageService storageService) {
         this.postRepository = postRepository;
         this.userRepository = userRepository;
         this.commentRepository = commentRepository;
         this.notificationService = notificationService;
         this.connectionRepository = connectionRepository;
+        this.storageService = storageService;
     }
 
-    public Post createPost(PostDto postDto, UUID authorId) {
-        AuthenticationUser author = userRepository.findById(authorId).orElseThrow(() -> new IllegalArgumentException("User not found"));
-        Post post = new Post(postDto.getContent(), author);
-        post.setPicture(postDto.getPicture());
+    public Post createPost(MultipartFile picture, String content, UUID id) throws Exception {
+        AuthenticationUser author = userRepository.findById(id).
+                orElseThrow(() -> new IllegalArgumentException("User not found"));
+//        Post post = new Post(postDto.getContent(), author);
+//        post.setPicture(postDto.getPicture());
+
+        String pictureUrl = storageService.saveImage(picture);
+        Post post = new Post(content, author);
+        post.setPicture(pictureUrl);
+        post.setLikes(new HashSet<>());
         notificationService.sendNewPostNotificationToFeed(post);
         return postRepository.save(post);
     }
 
-    public Post editPost(UUID postId, UUID authorId, PostDto postDto) {
-        AuthenticationUser author = userRepository.findById(authorId).orElseThrow(() -> new IllegalArgumentException("User not found"));
+    public Post editPost(UUID postId, UUID id, MultipartFile picture, String content) throws Exception {
+        AuthenticationUser author = userRepository.findById(id).
+                orElseThrow(() -> new IllegalArgumentException("User not found"));
         Post post = postRepository.findById(postId).orElseThrow(() -> new IllegalArgumentException("Post not found"));
 
         if (!post.getAuthor().equals(author)) {
             throw new IllegalArgumentException("You are not allowed to edit this post");
         }
-        post.setPicture(postDto.getPicture());
-        post.setContent(postDto.getContent());
+
+        String pictureUrl = storageService.saveImage(picture);
+        post.setContent(content);
+        post.setPicture(pictureUrl);
+
         notificationService.sendEditNotificationToPost(postId, post);
         return postRepository.save(post);
     }

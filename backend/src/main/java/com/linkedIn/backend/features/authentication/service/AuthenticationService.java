@@ -7,6 +7,7 @@ import com.linkedIn.backend.features.authentication.repository.AuthenticaltionUs
 import com.linkedIn.backend.features.authentication.utils.EmailService;
 import com.linkedIn.backend.features.authentication.utils.Encoder;
 import com.linkedIn.backend.features.authentication.utils.JsonWebToken;
+import com.linkedIn.backend.features.storage.service.StorageService;
 import io.jsonwebtoken.Claims;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
@@ -22,7 +23,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.RestTemplate;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
 import java.security.SecureRandom;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -41,6 +44,8 @@ public class AuthenticationService {
     private final EmailService emailService;
 
     private final RestTemplate restTemplate;
+    private final StorageService storageService;
+
     @PersistenceContext
     private EntityManager entityManager;
     @Value("${oauth.google.client.id}")
@@ -55,6 +60,7 @@ public class AuthenticationService {
         this.jsonWebToken = jsonWebToken;
         this.emailService = emailService;
         this.restTemplate = restTemplate;
+        this.storageService = new StorageService();
     }
 
     public static String generateEmailVerificationToken() {
@@ -239,20 +245,47 @@ public class AuthenticationService {
         }
     }
 
-    public AuthenticationUser updateUserProfile(UUID userId, String firstName, String lastName, String company, String position, String location, String profilePicture, String coverPicture, String about) {
-        AuthenticationUser user = authenticatedUserRepository.findById(userId).orElseThrow(() -> new IllegalArgumentException("User not found"));
+    public AuthenticationUser updateUserProfile(AuthenticationUser user, String firstName, String lastName, String company, String position, String location, String about) {
+        //AuthenticationUser user = authenticatedUserRepository.findById(userId).orElseThrow(() -> new IllegalArgumentException("User not found"));
 
         if(firstName != null) user.setFirstName(firstName);
         if(lastName != null) user.setLastName(lastName);
         if (company != null) user.setCompany(company);
         if (position != null) user.setPosition(position);
         if (location != null) user.setLocation(location);
-        if (profilePicture != null)
-            user.setProfilePicture(profilePicture);
-        if (coverPicture != null)
-            user.setCoverPicture(coverPicture);
+//        if (profilePicture != null)
+//            user.setProfilePicture(profilePicture);
+//        if (coverPicture != null)
+//            user.setCoverPicture(coverPicture);
         if (about != null)
             user.setAbout(about);
+
+        return authenticatedUserRepository.save(user);
+    }
+
+    public AuthenticationUser updateProfilePicture(AuthenticationUser user, MultipartFile profilePicture) throws IOException {
+        if (profilePicture != null) {
+            String profilePictureUrl = storageService.saveImage(profilePicture);
+            user.setProfilePicture(profilePictureUrl);
+        } else {
+            if (user.getProfilePicture() != null)
+                storageService.deleteFile(user.getProfilePicture());
+
+            user.setProfilePicture(null);
+        }
+        return authenticatedUserRepository.save(user);
+    }
+
+    public AuthenticationUser updateCoverPicture(AuthenticationUser user, MultipartFile coverPicture) throws IOException {
+        if (coverPicture != null) {
+            String coverPictureUrl = storageService.saveImage(coverPicture);
+            user.setCoverPicture(coverPictureUrl);
+        } else {
+            if (user.getCoverPicture() != null)
+                storageService.deleteFile(user.getCoverPicture());
+
+            user.setCoverPicture(null);
+        }
 
         return authenticatedUserRepository.save(user);
     }
